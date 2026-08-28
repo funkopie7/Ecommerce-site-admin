@@ -410,6 +410,55 @@ const PRODUCTS: Seed[] = [
   },
 ];
 
+type CollectionSeed = {
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  compareAtPrice: number;
+  imageUrl: string;
+  items: { sku: string; quantity: number }[];
+};
+
+const COLLECTIONS: CollectionSeed[] = [
+  {
+    slug: "sandtrooper-squad-set",
+    name: "Sandtrooper Squad Set",
+    description: "The Desert Patrol trooper and the Squad Leader variant, sold together as the two-man detail they were sculpted to display alongside.",
+    price: 1899900,
+    compareAtPrice: 2099800,
+    imageUrl: "https://images.unsplash.com/photo-1623039902375-29258147f39e?auto=format&fit=crop&w=1000&q=80",
+    items: [
+      { sku: "KJC-001", quantity: 1 },
+      { sku: "KJC-003", quantity: 1 },
+    ],
+  },
+  {
+    slug: "marvel-team-up-spider-man-falcon",
+    name: "Marvel Team-Up: Spider-Man & Falcon",
+    description: "Spider-Man in the classic red-and-blue suit paired with Sam Wilson's Falcon in his flight-ready pose — two Avengers-era mainstays for one shelf.",
+    price: 1699900,
+    compareAtPrice: 1899800,
+    imageUrl: "https://images.unsplash.com/photo-1529335764857-3f1164d1cb24?auto=format&fit=crop&w=1000&q=80",
+    items: [
+      { sku: "AIC-002", quantity: 1 },
+      { sku: "KJC-002", quantity: 1 },
+    ],
+  },
+  {
+    slug: "shonen-icons-duo",
+    name: "Shonen Icons Duo",
+    description: "Tanjiro Kamado and Super Saiyan Goku, two of shonen anime's most recognisable leads, bundled as a starter pair for a new collector's shelf.",
+    price: 699900,
+    compareAtPrice: 799800,
+    imageUrl: "https://images.unsplash.com/photo-1765633358993-c8a68fd47d6f?auto=format&fit=crop&w=1000&q=80",
+    items: [
+      { sku: "AIC-004", quantity: 1 },
+      { sku: "AIC-001", quantity: 1 },
+    ],
+  },
+];
+
 async function main() {
   const categoryIds = new Map<CategoryKey, string>();
   for (const category of CATEGORIES) {
@@ -425,6 +474,19 @@ async function main() {
   }
 
   await prisma.category.deleteMany({ where: { slug: { in: RETIRED_CATEGORY_SLUGS } } });
+
+  for (const collection of COLLECTIONS) {
+    const { items, ...rest } = collection;
+    const row = await prisma.collection.upsert({ where: { slug: collection.slug }, update: rest, create: rest });
+    for (const item of items) {
+      const product = await prisma.product.findUniqueOrThrow({ where: { sku: item.sku } });
+      await prisma.collectionItem.upsert({
+        where: { collectionId_productId: { collectionId: row.id, productId: product.id } },
+        update: { quantity: item.quantity },
+        create: { collectionId: row.id, productId: product.id, quantity: item.quantity },
+      });
+    }
+  }
 
   await prisma.customer.upsert({
     where: { email: "demo@funkopie.store" },

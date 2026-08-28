@@ -59,8 +59,33 @@ model Product {
   cartItems CartItem[]
   orderItems OrderItem[]
   adjustments InventoryAdjustment[]
+  collectionItems CollectionItem[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Collection {
+  id String @id @default(cuid())
+  name String @unique
+  slug String @unique
+  description String?
+  imageUrl String?
+  price Int
+  compareAtPrice Int?
+  visible Boolean @default(true)
+  items CollectionItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CollectionItem {
+  id String @id @default(cuid())
+  collectionId String
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  productId String
+  product Product @relation(fields: [productId], references: [id])
+  quantity Int @default(1)
+  @@unique([collectionId, productId])
 }
 
 model Customer {
