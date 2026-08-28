@@ -2,46 +2,435 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
+
+/* Funkopie sells real, licensed collectibles, so every listing below is
+   labelled to match what is actually shown in its photograph. Where a photo
+   shows a piece we cannot attribute to a licence with confidence (an
+   unbranded Pop!-style vinyl, an original fantasy statue, a musha ningyō
+   doll), it is listed honestly as an unattributed / original piece rather
+   than given a franchise it does not belong to. */
+
+const CATEGORIES = [
+  { key: "anime", name: "Anime", slug: "anime", description: "Shonen heroes, mecha and cult classics — Demon Slayer, Dragon Ball, Akira, Patlabor." },
+  { key: "marvel", name: "Marvel", slug: "marvel", description: "Marvel heroes, from the classic red-and-blue web-slinger to the Avengers roster." },
+  { key: "dc", name: "DC", slug: "dc", description: "Gotham and Metropolis on one shelf — Batman, Superman and the DC line-up." },
+  { key: "star-wars", name: "Star Wars", slug: "star-wars", description: "Imperial troopers and galaxy-far-away sculpts, weathered exactly as issued." },
+  { key: "movies-cartoons", name: "Movies & Cartoons", slug: "movies-cartoons", description: "Pixar, LEGO and Saturday-morning favourites — Woody, minifigures, ponies." },
+  { key: "custom-figures", name: "Custom Figures", slug: "custom-figures", description: "Designer art toys, blind-box pulls and original sculpts with no franchise tie." },
+] as const;
+
+type CategoryKey = (typeof CATEGORIES)[number]["key"];
+
+/* Slugs retired by the honest-relabelling pass. Removed after the products
+   have been re-pointed at the new categories so nothing is orphaned. */
+const RETIRED_CATEGORY_SLUGS = ["anime-icons", "retro-arcade", "space-legends", "kaiju-club", "indie-artists", "mini-icons"];
+
+type Seed = {
+  sku: string;
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  cost: number;
+  stockQuantity: number;
+  category: CategoryKey;
+  franchise: string;
+  character: string;
+  edition: string;
+  releaseDate: string;
+  badges: string[];
+  characterStory: string;
+  funFacts: string[];
+  imageUrl: string;
+};
+
+const PRODUCTS: Seed[] = [
+  /* ---------------- Anime ---------------- */
+  {
+    sku: "AIC-004",
+    slug: "tanjiro-kamado",
+    name: "Tanjiro Kamado",
+    description: "A chibi-proportioned Tanjiro Kamado figure in his Demon Slayer Corps uniform and green checkered haori, hand-painted and mounted on a black display disc.",
+    price: 449900,
+    cost: 198000,
+    stockQuantity: 26,
+    category: "anime",
+    franchise: "Demon Slayer",
+    character: "Tanjiro Kamado",
+    edition: "Standard",
+    releaseDate: "2026-06-01",
+    badges: ["NEW", "FAN_FAVORITE"],
+    characterStory:
+      "Tanjiro Kamado joins the Demon Slayer Corps after his family is attacked and his sister Nezuko is turned into a demon. He fights with Water Breathing forms and, later, the Hinokami Kagura passed down through his family — and he is known as much for his kindness toward the demons he faces as for his blade.",
+    funFacts: [
+      "Wears the hanafuda earrings inherited from his father",
+      "Trained in the Water Breathing forms under Sakonji Urokodaki",
+      "The green-and-black checkered haori is the character's most recognisable detail",
+    ],
+    imageUrl: "https://images.unsplash.com/photo-1765633358993-c8a68fd47d6f?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "AIC-001",
+    slug: "goku-super-saiyan",
+    name: "Goku Super Saiyan",
+    description: "A Super Saiyan Goku figure in torn orange gi and blue boots, sculpted mid-transformation with the signature spiked golden hair.",
+    price: 349900,
+    cost: 154000,
+    stockQuantity: 32,
+    category: "anime",
+    franchise: "Dragon Ball",
+    character: "Goku",
+    edition: "Standard",
+    releaseDate: "2026-06-01",
+    badges: ["NEW"],
+    characterStory:
+      "Goku is the Saiyan raised on Earth who keeps looking for a stronger opponent than the last one. This sculpt catches him in his Super Saiyan form, gi already torn from the fight that got him there.",
+    funFacts: ["Sculpted in the Super Saiyan form from the Frieza arc", "Battle-damage on the gi is moulded, not printed", "Hand-painted golden hair with a two-tone shadow wash"],
+    imageUrl: "https://images.unsplash.com/photo-1606663889134-b1dedb5ed8b7?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "RAR-002",
+    slug: "kaneda-and-the-red-bike",
+    name: "Kaneda and the Red Bike",
+    description: "Shotaro Kaneda seated on his red power bike, complete with the Canon, Citizen and Shoei sponsor decals and a separate laser-rifle accessory.",
+    price: 1899900,
+    cost: 890000,
+    stockQuantity: 6,
+    category: "anime",
+    franchise: "Akira",
+    character: "Shotaro Kaneda",
+    edition: "Chase",
+    releaseDate: "2026-05-02",
+    badges: ["LIMITED", "FAN_FAVORITE"],
+    characterStory:
+      "Kaneda leads a biker gang through Neo-Tokyo and spends most of the story chasing after his friend Tetsuo. The bike is as famous as he is — arguably more so.",
+    funFacts: ["Bike carries the film's original sponsor decals", "Includes the removable laser rifle", "Kaneda's jacket is a separate soft-goods piece"],
+    imageUrl: "https://images.unsplash.com/photo-1700909416178-40b292788200?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "RAR-001",
+    slug: "av-98-ingram",
+    name: "AV-98 Ingram Patrol Labor",
+    description: "The AV-98 Ingram in Tokyo Metropolitan Police livery, shield and all, with the unit's number plate and 警視庁 markings picked out in tampo print.",
+    price: 1299900,
+    cost: 590000,
+    stockQuantity: 11,
+    category: "anime",
+    franchise: "Patlabor",
+    character: "AV-98 Ingram",
+    edition: "Standard",
+    releaseDate: "2026-03-10",
+    badges: ["NEW"],
+    characterStory:
+      "The Ingram is the patrol labor issued to Special Vehicles Section 2 — a police mecha that spends as much time filling out paperwork as it does making arrests.",
+    funFacts: ["Police shield and number plate are printed, not stickered", "Articulated at the shoulders, elbows, hips and knees", "Displayed here in the standard patrol livery"],
+    imageUrl: "https://images.unsplash.com/photo-1700909415800-6d2a5a83a234?auto=format&fit=crop&w=1000&q=80",
+  },
+
+  /* ---------------- Marvel ---------------- */
+  {
+    sku: "AIC-002",
+    slug: "spider-man-classic-suit",
+    name: "Spider-Man Classic Suit",
+    description: "Spider-Man in the classic red-and-blue suit, fully articulated, with the webbing pattern hand-lined across the mask, torso and boots.",
+    price: 899900,
+    cost: 400000,
+    stockQuantity: 14,
+    category: "marvel",
+    franchise: "Marvel",
+    character: "Spider-Man",
+    edition: "Deluxe",
+    releaseDate: "2026-04-14",
+    badges: ["LIMITED", "FAN_FAVORITE"],
+    characterStory:
+      "Peter Parker's original red-and-blue costume, still the one most collectors want on the shelf. This is the standing display pose rather than a crouched web-shot.",
+    funFacts: ["Classic red-and-blue costume, not a movie variant", "Webbing lines are printed over the sculpted suit texture", "Stands unaided without a base"],
+    imageUrl: "https://images.unsplash.com/photo-1529335764857-3f1164d1cb24?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "KJC-002",
+    slug: "falcon-sam-wilson",
+    name: "Falcon",
+    description: "Sam Wilson as the Falcon in the classic red-and-white flight suit, wings swept back, mounted on a sculpted rubble base.",
+    price: 999900,
+    cost: 450000,
+    stockQuantity: 12,
+    category: "marvel",
+    franchise: "Marvel",
+    character: "Falcon (Sam Wilson)",
+    edition: "Deluxe",
+    releaseDate: "2026-05-28",
+    badges: ["FAN_FAVORITE"],
+    characterStory:
+      "Sam Wilson flies with a harness of his own design and has been the Avengers' eyes in the air for most of his run. The classic comics costume, not the film suit.",
+    funFacts: ["Classic comic-book costume colourway", "Wings are a separate moulded piece", "Comes attached to its own rubble display base"],
+    imageUrl: "https://images.unsplash.com/photo-1608697341777-80b7461d93c3?auto=format&fit=crop&w=1000&q=80",
+  },
+
+  /* ---------------- DC ---------------- */
+  {
+    sku: "RAR-003",
+    slug: "batman-caped-crusader",
+    name: "Batman: The Caped Crusader",
+    description: "A matte-black Batman statue with a sculpted cape, armoured cowl and the yellow-free chest emblem, finished with a grey drybrush over the muscle sculpt.",
+    price: 899900,
+    cost: 410000,
+    stockQuantity: 15,
+    category: "dc",
+    franchise: "DC",
+    character: "Batman",
+    edition: "Deluxe",
+    releaseDate: "2026-08-01",
+    badges: ["PRE_ORDER"],
+    characterStory: "Bruce Wayne's Batman, in the modern armoured suit with the monochrome bat emblem. Cowl, cape and utility belt all sculpted as one piece for a clean display silhouette.",
+    funFacts: ["Modern armoured-suit sculpt with the black-on-grey emblem", "Cape is a solid sculpted piece, not fabric", "Utility belt is painted in a separate off-white pass"],
+    imageUrl: "https://images.unsplash.com/photo-1700825073852-1913b3886584?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "MNI-001",
+    slug: "superman-man-of-steel",
+    name: "Superman: Man of Steel",
+    description: "A fully articulated Superman figure in the darker blue Man of Steel suit, with a real fabric cape and the textured kryptonian weave sculpted into the bodysuit.",
+    price: 799900,
+    cost: 360000,
+    stockQuantity: 20,
+    category: "dc",
+    franchise: "DC",
+    character: "Superman",
+    edition: "Standard",
+    releaseDate: "2026-04-22",
+    badges: ["NEW"],
+    characterStory: "Kal-El in the modern film costume — deeper blue, no trunks, and the raised red S-shield. Photographed against white so you can see the suit texture properly.",
+    funFacts: ["Soft-goods cape rather than a moulded one", "Suit weave is sculpted into the surface, not printed", "Articulated at the neck, shoulders, elbows, wrists, hips, knees and ankles"],
+    imageUrl: "https://images.unsplash.com/photo-1558679908-541bcf1249ff?auto=format&fit=crop&w=1000&q=80",
+  },
+
+  /* ---------------- Star Wars ---------------- */
+  {
+    sku: "KJC-001",
+    slug: "sandtrooper-desert-patrol",
+    name: "Sandtrooper: Desert Patrol",
+    description: "A weathered Imperial sandtrooper in a kneeling firing pose, blaster rifle raised, with the black pauldron and full field kit.",
+    price: 699900,
+    cost: 310000,
+    stockQuantity: 22,
+    category: "star-wars",
+    franchise: "Star Wars",
+    character: "Sandtrooper",
+    edition: "Standard",
+    releaseDate: "2026-04-05",
+    badges: ["NEW"],
+    characterStory: "Imperial sandtroopers were the ones combing Tatooine for the missing droids. The dust weathering on the armour is applied at the factory, plate by plate.",
+    funFacts: ["Black pauldron denotes the squad's rank marking", "Armour weathering is sprayed and drybrushed, not printed", "Includes the standard-issue blaster rifle"],
+    imageUrl: "https://images.unsplash.com/photo-1623039902375-29258147f39e?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "KJC-003",
+    slug: "sandtrooper-squad-leader",
+    name: "Sandtrooper: Squad Leader",
+    description: "The standing squad-leader variant of the Imperial sandtrooper, backpack and survival kit mounted, blaster slung across the chest.",
+    price: 1399900,
+    cost: 630000,
+    stockQuantity: 7,
+    category: "star-wars",
+    franchise: "Star Wars",
+    character: "Sandtrooper",
+    edition: "Exclusive",
+    releaseDate: "2026-07-08",
+    badges: ["LIMITED", "PRE_ORDER"],
+    characterStory: "The same trooper, one rank up and one pose over: standing, pack loaded, rifle stowed. Displayed alongside the Desert Patrol figure it reads as a two-man detail.",
+    funFacts: ["Squad-leader variant with the full field backpack", "Poses to pair with the Desert Patrol sandtrooper", "Exclusive to this release window"],
+    imageUrl: "https://images.unsplash.com/photo-1623039958673-08c3f4376009?auto=format&fit=crop&w=1000&q=80",
+  },
+
+  /* ---------------- Movies & Cartoons ---------------- */
+  {
+    sku: "SPL-003",
+    slug: "woody-toy-story",
+    name: "Woody",
+    description: "The Toy Story pull-string cowboy in his yellow plaid shirt, cow-print vest and hat, with the classic bendy-limb body.",
+    price: 1599900,
+    cost: 720000,
+    stockQuantity: 5,
+    category: "movies-cartoons",
+    franchise: "Disney Pixar",
+    character: "Woody",
+    edition: "Chase",
+    releaseDate: "2026-08-15",
+    badges: ["PRE_ORDER", "LIMITED"],
+    characterStory: "Sheriff Woody, Andy's favourite toy and the one who keeps the rest of the toy box in line. Hat is removable, as it should be.",
+    funFacts: ["Removable cowboy hat", "Bendable arms and legs for posing", "Yellow plaid shirt and cow-print vest are printed fabric-effect"],
+    imageUrl: "https://images.unsplash.com/photo-1603557092510-263cac6e7ae6?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "IND-002",
+    slug: "lego-ghost-minifigure",
+    name: "LEGO Ghost Minifigure",
+    description: "The classic LEGO ghost minifigure — printed shroud, hooded head piece and the grey robe that slips over a standard minifigure body.",
+    price: 109900,
+    cost: 49000,
+    stockQuantity: 9,
+    category: "movies-cartoons",
+    franchise: "LEGO",
+    character: "Ghost Minifigure",
+    edition: "Deluxe",
+    releaseDate: "2026-06-30",
+    badges: ["LIMITED", "FAN_FAVORITE"],
+    characterStory: "The LEGO ghost has been haunting castle and Halloween sets since the 1990s, and the shroud has barely changed since. Still one of the most-traded minifigures going.",
+    funFacts: ["The shroud is a separate slip-on piece", "Printed face sits under the hood", "Fits any standard minifigure body"],
+    imageUrl: "https://images.unsplash.com/photo-1690041638795-14c34f90da9a?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "IND-003",
+    slug: "my-little-pony-chibi-set",
+    name: "My Little Pony Chibi Set of Five",
+    description: "Five chibi-style My Little Pony vinyl figures sold as one set — soft pastel colourways, oversized eyes and moulded manes.",
+    price: 159900,
+    cost: 74000,
+    stockQuantity: 14,
+    category: "movies-cartoons",
+    franchise: "My Little Pony",
+    character: "Fluttershy & Friends",
+    edition: "Standard",
+    releaseDate: "2026-08-10",
+    badges: ["NEW"],
+    characterStory: "Five of the show's best-known ponies, shrunk to chibi proportions and sat in a row. Sold as a complete set rather than blind-boxed, so you get all five.",
+    funFacts: ["Sold as a complete five-figure set, no duplicates", "Each pony sits about two inches tall", "Manes and tails are moulded, not rooted hair"],
+    imageUrl: "https://images.unsplash.com/photo-1767026916692-aa8f9cd220ef?auto=format&fit=crop&w=1000&q=80",
+  },
+
+  /* ---------------- Custom Figures ---------------- */
+  {
+    sku: "MNI-002",
+    slug: "hirono-cardboard-cargo",
+    name: "Hirono: Cardboard Cargo",
+    description: "A large-format Hirono designer vinyl wearing a cardboard-box costume printed with shipping marks, bandaged hand raised, on a steel display disc.",
+    price: 1999900,
+    cost: 850000,
+    stockQuantity: 4,
+    category: "custom-figures",
+    franchise: "POP MART",
+    character: "Hirono",
+    edition: "Deluxe",
+    releaseDate: "2026-05-15",
+    badges: ["LIMITED"],
+    characterStory: "Hirono is Lang's designer-toy character for POP MART — a sulky boy whose whole appeal is that he never quite looks at you. This release puts him inside a shipping box, stencils and all.",
+    funFacts: ["Designer art toy rather than a licensed character figure", "Cardboard costume is moulded vinyl with printed shipping marks", "Large-format release, well above blind-box scale"],
+    imageUrl: "https://images.unsplash.com/photo-1769345749373-d1407c84cdbf?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "SPL-001",
+    slug: "pop-vinyl-red-flight-suit",
+    name: "Pop! Vinyl: Red Flight Suit",
+    description: "A Pop!-style vinyl figure in a red NASA-patched flight suit holding a microphone, with printed floral trainers. Sold unattributed — the licensed character is not marked on the piece we photographed.",
+    price: 599900,
+    cost: 260000,
+    stockQuantity: 25,
+    category: "custom-figures",
+    franchise: "Funko Pop!",
+    character: "Flight Suit Pop!",
+    edition: "Standard",
+    releaseDate: "2026-03-25",
+    badges: ["NEW"],
+    characterStory: "We list this one honestly: it is a Pop!-format vinyl in a red mission flight suit with a microphone in hand, and we cannot confirm which licensed character it depicts. If you recognise it, tell us and we will correct the listing.",
+    funFacts: ["Sold as an unattributed Pop!-format vinyl", "NASA meatball and two mission patches on the chest", "Printed floral trainers, sculpted separately from the suit"],
+    imageUrl: "https://images.unsplash.com/photo-1718254951230-dac05b0ff8b9?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "IND-001",
+    slug: "pop-vinyl-denim-jacket",
+    name: "Pop! Vinyl: Denim Jacket",
+    description: "A Pop!-style vinyl figure with a dark bob, patched denim jacket, rolled jeans and black high-tops. Listed unattributed — no licence marking on the piece.",
+    price: 549900,
+    cost: 240000,
+    stockQuantity: 18,
+    category: "custom-figures",
+    franchise: "Funko Pop!",
+    character: "Denim Jacket Pop!",
+    edition: "Standard",
+    releaseDate: "2026-03-18",
+    badges: ["NEW"],
+    characterStory: "Another honest listing: a Pop!-format vinyl we stock as an unattributed piece. Everyday clothes, no franchise markings, and no claim from us about who it is meant to be.",
+    funFacts: ["Sold as an unattributed Pop!-format vinyl", "Patched denim jacket is painted, not soft-goods", "Stands about four inches tall"],
+    imageUrl: "https://images.unsplash.com/photo-1781543423089-dc61428dbbfa?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "MNI-003",
+    slug: "mystery-blind-box-pull",
+    name: "Mystery Blind Box Pull",
+    description: "One sealed pull from our blind-box wall. Anime, Marvel and Transformers super-deformed minis all sit in the same rotation, so the box decides.",
+    price: 249900,
+    cost: 110000,
+    stockQuantity: 16,
+    category: "custom-figures",
+    franchise: "Blind Box",
+    character: "Sealed pull",
+    edition: "Exclusive",
+    releaseDate: "2026-07-29",
+    badges: ["FAN_FAVORITE", "PRE_ORDER"],
+    characterStory: "The blind-box wall is the part of the shop people photograph. You pick a numbered cell, we pull the box sealed, and neither of us knows which mini is inside until you open it.",
+    funFacts: ["Current rotation includes One Piece, Marvel and Transformers minis", "Boxes are pulled sealed and never pre-sorted", "Duplicates can be traded back in store credit"],
+    imageUrl: "https://images.unsplash.com/photo-1720630351963-93567f7a746d?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "AIC-003",
+    slug: "samurai-musha-doll",
+    name: "Samurai Musha Ningyō Doll",
+    description: "A traditional Japanese musha ningyō display doll in lacquered lamellar armour with a gilded kabuto, silk brocade hakama and a drawn katana, on a black lacquer base.",
+    price: 1499900,
+    cost: 680000,
+    stockQuantity: 8,
+    category: "custom-figures",
+    franchise: "Original Design",
+    character: "Armoured Samurai",
+    edition: "Exclusive",
+    releaseDate: "2026-07-20",
+    badges: ["PRE_ORDER"],
+    characterStory: "Musha ningyō are the armoured warrior dolls traditionally displayed in Japan for Children's Day. This is a decorative piece rather than a character from any series — no franchise, no lore, just craft.",
+    funFacts: ["Armour lacing and brocade are real textile, not moulded", "Ships on its own black lacquer display base", "Not tied to any anime or film licence"],
+    imageUrl: "https://images.unsplash.com/photo-1687865547203-f592769b9221?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    sku: "SPL-002",
+    slug: "dread-reaper-statue",
+    name: "Dread Reaper Statue",
+    description: "An original-design dark knight statue — horned helm with red glass eyes, chainmail sleeves, a gilded pauldron and a blood-tipped scythe.",
+    price: 1299900,
+    cost: 590000,
+    stockQuantity: 10,
+    category: "custom-figures",
+    franchise: "Original Design",
+    character: "Dread Reaper",
+    edition: "Exclusive",
+    releaseDate: "2026-06-18",
+    badges: ["LIMITED", "FAN_FAVORITE"],
+    characterStory: "A studio original rather than a licensed character — a horned reaper knight cast in resin, drybrushed grey over black, with the only colour in the eyes and the blade.",
+    funFacts: ["Original studio sculpt, no franchise tie", "Eyes and scythe edge are the only painted colour", "Chainmail texture is sculpted into the master, not a decal"],
+    imageUrl: "https://images.unsplash.com/photo-1753492644538-53ee68625f6d?auto=format&fit=crop&w=1000&q=80",
+  },
+];
+
 async function main() {
-  const animeIcons = await prisma.category.upsert({ where: { slug: "anime-icons" }, update: { name: "Anime Icons", slug: "anime-icons", description: "Stylized character figures with painterly detail and big personality." }, create: { name: "Anime Icons", slug: "anime-icons", description: "Stylized character figures with painterly detail and big personality." } });
-  const retroArcade = await prisma.category.upsert({ where: { slug: "retro-arcade" }, update: { name: "Retro Arcade", slug: "retro-arcade", description: "Pixel-bright figures pulled straight from the golden age of the arcade." }, create: { name: "Retro Arcade", slug: "retro-arcade", description: "Pixel-bright figures pulled straight from the golden age of the arcade." } });
-  const spaceLegends = await prisma.category.upsert({ where: { slug: "space-legends" }, update: { name: "Space Legends", slug: "space-legends", description: "Epic sci-fi explorers, droids, and starfarers built for the display shelf." }, create: { name: "Space Legends", slug: "space-legends", description: "Epic sci-fi explorers, droids, and starfarers built for the display shelf." } });
-  const kaijuClub = await prisma.category.upsert({ where: { slug: "kaiju-club" }, update: { name: "Kaiju Club", slug: "kaiju-club", description: "Giant monsters with surprisingly big hearts, sculpted in loving detail." }, create: { name: "Kaiju Club", slug: "kaiju-club", description: "Giant monsters with surprisingly big hearts, sculpted in loving detail." } });
-  const indieArtists = await prisma.category.upsert({ where: { slug: "indie-artists" }, update: { name: "Artist Proofs", slug: "indie-artists", description: "Small-batch art toys from independent sculptors, hand-finished and numbered." }, create: { name: "Artist Proofs", slug: "indie-artists", description: "Small-batch art toys from independent sculptors, hand-finished and numbered." } });
-  const miniIcons = await prisma.category.upsert({ where: { slug: "mini-icons" }, update: { name: "Pocket Pulls", slug: "mini-icons", description: "Pocket-sized blind-box collectibles built for stacking shelves and surprise pulls." }, create: { name: "Pocket Pulls", slug: "mini-icons", description: "Pocket-sized blind-box collectibles built for stacking shelves and surprise pulls." } });
+  const categoryIds = new Map<CategoryKey, string>();
+  for (const category of CATEGORIES) {
+    const data = { name: category.name, slug: category.slug, description: category.description };
+    const row = await prisma.category.upsert({ where: { slug: category.slug }, update: data, create: data });
+    categoryIds.set(category.key, row.id);
+  }
 
-  await Promise.all([
-    // Anime Icons
-    prisma.product.upsert({ where: { sku: "AIC-001" }, update: { sku: "AIC-001", slug: "kestrel-the-wanderer", name: "Kestrel the Wanderer", description: "A hand-painted vinyl figure with a weathered cloak and articulated joints.", price: 4999, cost: 2200, stockQuantity: 32, categoryId: animeIcons.id, franchise: "Anime Icons", character: "Kestrel", edition: "Standard", releaseDate: new Date("2026-06-01"), badges: ["NEW"], characterStory: "Kestrel wanders between rival clans, trusted by none and needed by all.", funFacts: ["First figure in the Wanderer line", "Cloak fabric is a separate cloth piece, not sculpted plastic"], imageUrl: "https://images.unsplash.com/photo-1606663889134-b1dedb5ed8b7?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "AIC-001", slug: "kestrel-the-wanderer", name: "Kestrel the Wanderer", description: "A hand-painted vinyl figure with a weathered cloak and articulated joints.", price: 4999, cost: 2200, stockQuantity: 32, categoryId: animeIcons.id, franchise: "Anime Icons", character: "Kestrel", edition: "Standard", releaseDate: new Date("2026-06-01"), badges: ["NEW"], characterStory: "Kestrel wanders between rival clans, trusted by none and needed by all.", funFacts: ["First figure in the Wanderer line", "Cloak fabric is a separate cloth piece, not sculpted plastic"], imageUrl: "https://images.unsplash.com/photo-1606663889134-b1dedb5ed8b7?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "AIC-002" }, update: { sku: "AIC-002", slug: "yuki-nightshade", name: "Yuki Nightshade", description: "A moonlit priestess figure cast in pearlescent resin, with a removable lantern accessory and hand-inked eye detailing.", price: 8999, cost: 4000, stockQuantity: 14, categoryId: animeIcons.id, franchise: "Anime Icons", character: "Yuki Nightshade", edition: "Deluxe", releaseDate: new Date("2026-04-14"), badges: ["LIMITED", "FAN_FAVORITE"], characterStory: "Yuki keeps watch over the boundary between the waking world and the dream realm, lighting the way for travelers who lose their path after dark. She speaks rarely, but every villager knows her lantern by sight.", funFacts: ["Lantern glows under blacklight", "Eyes are hand-painted individually, so no two figures match exactly", "Design grew out of more than 40 early concept sketches"], imageUrl: "https://images.unsplash.com/photo-1529335764857-3f1164d1cb24?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "AIC-002", slug: "yuki-nightshade", name: "Yuki Nightshade", description: "A moonlit priestess figure cast in pearlescent resin, with a removable lantern accessory and hand-inked eye detailing.", price: 8999, cost: 4000, stockQuantity: 14, categoryId: animeIcons.id, franchise: "Anime Icons", character: "Yuki Nightshade", edition: "Deluxe", releaseDate: new Date("2026-04-14"), badges: ["LIMITED", "FAN_FAVORITE"], characterStory: "Yuki keeps watch over the boundary between the waking world and the dream realm, lighting the way for travelers who lose their path after dark. She speaks rarely, but every villager knows her lantern by sight.", funFacts: ["Lantern glows under blacklight", "Eyes are hand-painted individually, so no two figures match exactly", "Design grew out of more than 40 early concept sketches"], imageUrl: "https://images.unsplash.com/photo-1529335764857-3f1164d1cb24?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "AIC-003" }, update: { sku: "AIC-003", slug: "ronin-vale", name: "Ronin Vale", description: "An oversized katana-wielding swordsman figure with a swappable battle-worn faceplate and weathered fabric sash.", price: 14999, cost: 6800, stockQuantity: 8, categoryId: animeIcons.id, franchise: "Anime Icons", character: "Ronin Vale", edition: "Exclusive", releaseDate: new Date("2026-07-20"), badges: ["PRE_ORDER"], characterStory: "Ronin Vale swore an oath to a master who no longer exists, and now wanders battlefields looking for a fight worth the blade. Collectors call him the line's quiet fan favorite, for reasons nobody can quite explain.", funFacts: ["Includes two interchangeable expression faceplates", "Sash is tied by hand at the factory, not molded", "Pre-order units ship with a metallic blade variant"], imageUrl: "https://images.unsplash.com/photo-1687865547203-f592769b9221?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "AIC-003", slug: "ronin-vale", name: "Ronin Vale", description: "An oversized katana-wielding swordsman figure with a swappable battle-worn faceplate and weathered fabric sash.", price: 14999, cost: 6800, stockQuantity: 8, categoryId: animeIcons.id, franchise: "Anime Icons", character: "Ronin Vale", edition: "Exclusive", releaseDate: new Date("2026-07-20"), badges: ["PRE_ORDER"], characterStory: "Ronin Vale swore an oath to a master who no longer exists, and now wanders battlefields looking for a fight worth the blade. Collectors call him the line's quiet fan favorite, for reasons nobody can quite explain.", funFacts: ["Includes two interchangeable expression faceplates", "Sash is tied by hand at the factory, not molded", "Pre-order units ship with a metallic blade variant"], imageUrl: "https://images.unsplash.com/photo-1687865547203-f592769b9221?auto=format&fit=crop&w=1000&q=80" } }),
+  for (const product of PRODUCTS) {
+    const { category, releaseDate, ...rest } = product;
+    const data = { ...rest, categoryId: categoryIds.get(category)!, releaseDate: new Date(releaseDate) };
+    await prisma.product.upsert({ where: { sku: product.sku }, update: data, create: data });
+  }
 
-    // Retro Arcade
-    prisma.product.upsert({ where: { sku: "RAR-001" }, update: { sku: "RAR-001", slug: "byte-blaster", name: "Byte Blaster", description: "An 8-bit-inspired hero figure with blocky proportions, chunky primary colors, and a light-up chest core.", price: 3999, cost: 1700, stockQuantity: 40, categoryId: retroArcade.id, franchise: "Retro Arcade", character: "Byte Blaster", edition: "Standard", releaseDate: new Date("2026-03-10"), badges: ["NEW"], characterStory: "Byte Blaster was the first sprite to break out of his cabinet and into the real world, and he's never stopped grinning about it. He collects high scores the way other people collect trophies.", funFacts: ["Chest core lights up on a coin-cell battery", "Sculpt intentionally keeps visible pixel edges", "Based on a fictional 1991 arcade cabinet"], imageUrl: "https://images.unsplash.com/photo-1700909415800-6d2a5a83a234?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "RAR-001", slug: "byte-blaster", name: "Byte Blaster", description: "An 8-bit-inspired hero figure with blocky proportions, chunky primary colors, and a light-up chest core.", price: 3999, cost: 1700, stockQuantity: 40, categoryId: retroArcade.id, franchise: "Retro Arcade", character: "Byte Blaster", edition: "Standard", releaseDate: new Date("2026-03-10"), badges: ["NEW"], characterStory: "Byte Blaster was the first sprite to break out of his cabinet and into the real world, and he's never stopped grinning about it. He collects high scores the way other people collect trophies.", funFacts: ["Chest core lights up on a coin-cell battery", "Sculpt intentionally keeps visible pixel edges", "Based on a fictional 1991 arcade cabinet"], imageUrl: "https://images.unsplash.com/photo-1700909415800-6d2a5a83a234?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "RAR-002" }, update: { sku: "RAR-002", slug: "pixel-pup-zero", name: "Pixel Pup Zero", description: "A boxy companion-bot figure with articulated ears, a wagging tail joint, and a translucent chase-edition shell.", price: 5999, cost: 2600, stockQuantity: 6, categoryId: retroArcade.id, franchise: "Retro Arcade", character: "Pixel Pup Zero", edition: "Chase", releaseDate: new Date("2026-05-02"), badges: ["LIMITED", "FAN_FAVORITE"], characterStory: "Pixel Pup Zero was patched into existence as a debugging tool and immediately refused to leave. Now he rides shotgun with every hero in the arcade, mostly for the snacks.", funFacts: ["1-in-12 chase variant with a clear shell", "Tail joint is spring-loaded", "Named after an internal bug-tracker ticket number"], imageUrl: "https://images.unsplash.com/photo-1700909416178-40b292788200?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "RAR-002", slug: "pixel-pup-zero", name: "Pixel Pup Zero", description: "A boxy companion-bot figure with articulated ears, a wagging tail joint, and a translucent chase-edition shell.", price: 5999, cost: 2600, stockQuantity: 6, categoryId: retroArcade.id, franchise: "Retro Arcade", character: "Pixel Pup Zero", edition: "Chase", releaseDate: new Date("2026-05-02"), badges: ["LIMITED", "FAN_FAVORITE"], characterStory: "Pixel Pup Zero was patched into existence as a debugging tool and immediately refused to leave. Now he rides shotgun with every hero in the arcade, mostly for the snacks.", funFacts: ["1-in-12 chase variant with a clear shell", "Tail joint is spring-loaded", "Named after an internal bug-tracker ticket number"], imageUrl: "https://images.unsplash.com/photo-1700909416178-40b292788200?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "RAR-003" }, update: { sku: "RAR-003", slug: "coin-king-cascade", name: "Cascade the Coin King", description: "A crowned, coin-hoarding boss figure on a diorama base of stacked tokens, with a removable cape.", price: 8999, cost: 4100, stockQuantity: 15, categoryId: retroArcade.id, franchise: "Retro Arcade", character: "Cascade", edition: "Deluxe", releaseDate: new Date("2026-08-01"), badges: ["PRE_ORDER"], characterStory: "Coin King Cascade rules the arcade's high-score board through sheer stubbornness, refusing every challenger a rematch he might lose. Everyone wants to beat him. Nobody has.", funFacts: ["Diorama base includes 30 sculpted coin tokens", "Crown is die-cast metal, not plastic", "Cape hides a small compartment for a spare coin"], imageUrl: "https://images.unsplash.com/photo-1700825073852-1913b3886584?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "RAR-003", slug: "coin-king-cascade", name: "Cascade the Coin King", description: "A crowned, coin-hoarding boss figure on a diorama base of stacked tokens, with a removable cape.", price: 8999, cost: 4100, stockQuantity: 15, categoryId: retroArcade.id, franchise: "Retro Arcade", character: "Cascade", edition: "Deluxe", releaseDate: new Date("2026-08-01"), badges: ["PRE_ORDER"], characterStory: "Coin King Cascade rules the arcade's high-score board through sheer stubbornness, refusing every challenger a rematch he might lose. Everyone wants to beat him. Nobody has.", funFacts: ["Diorama base includes 30 sculpted coin tokens", "Crown is die-cast metal, not plastic", "Cape hides a small compartment for a spare coin"], imageUrl: "https://images.unsplash.com/photo-1700825073852-1913b3886584?auto=format&fit=crop&w=1000&q=80" } }),
+  await prisma.category.deleteMany({ where: { slug: { in: RETIRED_CATEGORY_SLUGS } } });
 
-    // Space Legends
-    prisma.product.upsert({ where: { sku: "SPL-001" }, update: { sku: "SPL-001", slug: "captain-nova-vega", name: "Captain Nova Vega", description: "A fully articulated starship captain figure in a weathered flight suit, with a display-ready magnetic helmet.", price: 5999, cost: 2600, stockQuantity: 25, categoryId: spaceLegends.id, franchise: "Space Legends", character: "Nova Vega", edition: "Standard", releaseDate: new Date("2026-03-25"), badges: ["NEW"], characterStory: "Nova Vega has logged more deep-space hours than anyone in the fleet and still reads the safety briefing out loud before every single flight. Her crew calls it superstition. She calls it discipline.", funFacts: ["Helmet attaches magnetically for easy posing", "Flight suit weathering is airbrushed by hand", "22 points of articulation"], imageUrl: "https://images.unsplash.com/photo-1718254951230-dac05b0ff8b9?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "SPL-001", slug: "captain-nova-vega", name: "Captain Nova Vega", description: "A fully articulated starship captain figure in a weathered flight suit, with a display-ready magnetic helmet.", price: 5999, cost: 2600, stockQuantity: 25, categoryId: spaceLegends.id, franchise: "Space Legends", character: "Nova Vega", edition: "Standard", releaseDate: new Date("2026-03-25"), badges: ["NEW"], characterStory: "Nova Vega has logged more deep-space hours than anyone in the fleet and still reads the safety briefing out loud before every single flight. Her crew calls it superstition. She calls it discipline.", funFacts: ["Helmet attaches magnetically for easy posing", "Flight suit weathering is airbrushed by hand", "22 points of articulation"], imageUrl: "https://images.unsplash.com/photo-1718254951230-dac05b0ff8b9?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "SPL-002" }, update: { sku: "SPL-002", slug: "orbit-9", name: "Orbit-9", description: "A hovering droid figure on a clear acrylic support rod, with a rotating sensor eye and glow-in-the-dark accents.", price: 12999, cost: 5900, stockQuantity: 10, categoryId: spaceLegends.id, franchise: "Space Legends", character: "Orbit-9", edition: "Exclusive", releaseDate: new Date("2026-06-18"), badges: ["LIMITED", "FAN_FAVORITE"], characterStory: "Orbit-9 was built to log soil samples and somehow developed a personality along the way, mostly sarcasm. It still logs the soil samples. It just has commentary now.", funFacts: ["Sensor eye rotates a full 360 degrees", "Accent panels glow in the dark after charging under light", "Its best voice lines only appear in the companion comic, not on the figure"], imageUrl: "https://images.unsplash.com/photo-1753492644538-53ee68625f6d?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "SPL-002", slug: "orbit-9", name: "Orbit-9", description: "A hovering droid figure on a clear acrylic support rod, with a rotating sensor eye and glow-in-the-dark accents.", price: 12999, cost: 5900, stockQuantity: 10, categoryId: spaceLegends.id, franchise: "Space Legends", character: "Orbit-9", edition: "Exclusive", releaseDate: new Date("2026-06-18"), badges: ["LIMITED", "FAN_FAVORITE"], characterStory: "Orbit-9 was built to log soil samples and somehow developed a personality along the way, mostly sarcasm. It still logs the soil samples. It just has commentary now.", funFacts: ["Sensor eye rotates a full 360 degrees", "Accent panels glow in the dark after charging under light", "Its best voice lines only appear in the companion comic, not on the figure"], imageUrl: "https://images.unsplash.com/photo-1753492644538-53ee68625f6d?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "SPL-003" }, update: { sku: "SPL-003", slug: "nebula-reyes", name: "Nebula Reyes", description: "A field-suited explorer figure with a specimen case accessory and a translucent nebula-effect display base.", price: 15999, cost: 7200, stockQuantity: 5, categoryId: spaceLegends.id, franchise: "Space Legends", character: "Nebula Reyes", edition: "Chase", releaseDate: new Date("2026-08-15"), badges: ["PRE_ORDER", "LIMITED"], characterStory: "Nebula Reyes has cataloged more first-contact life forms than anyone alive, and keeps every single specimen jar labeled in her own careful handwriting. She's convinced the next jar will be the strange one.", funFacts: ["Display base uses swirled translucent resin, so no two are identical", "Specimen case opens to reveal three tiny sculpted samples", "Chase variant limited to 500 units worldwide"], imageUrl: "https://images.unsplash.com/photo-1603557092510-263cac6e7ae6?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "SPL-003", slug: "nebula-reyes", name: "Nebula Reyes", description: "A field-suited explorer figure with a specimen case accessory and a translucent nebula-effect display base.", price: 15999, cost: 7200, stockQuantity: 5, categoryId: spaceLegends.id, franchise: "Space Legends", character: "Nebula Reyes", edition: "Chase", releaseDate: new Date("2026-08-15"), badges: ["PRE_ORDER", "LIMITED"], characterStory: "Nebula Reyes has cataloged more first-contact life forms than anyone alive, and keeps every single specimen jar labeled in her own careful handwriting. She's convinced the next jar will be the strange one.", funFacts: ["Display base uses swirled translucent resin, so no two are identical", "Specimen case opens to reveal three tiny sculpted samples", "Chase variant limited to 500 units worldwide"], imageUrl: "https://images.unsplash.com/photo-1603557092510-263cac6e7ae6?auto=format&fit=crop&w=1000&q=80" } }),
-
-    // Kaiju Club
-    prisma.product.upsert({ where: { sku: "KJC-001" }, update: { sku: "KJC-001", slug: "grumblestone", name: "Grumblestone", description: "A boulder-textured kaiju figure with a soft-touch rubber hide and a surprisingly friendly under-bite grin.", price: 6999, cost: 3100, stockQuantity: 22, categoryId: kaijuClub.id, franchise: "Kaiju Club", character: "Grumblestone", edition: "Standard", releaseDate: new Date("2026-04-05"), badges: ["NEW"], characterStory: "Grumblestone flattened three city blocks on his first day and apologized to every single building. He just wanted to see the ocean. Now the city keeps a lane open for him.", funFacts: ["Textured hide uses a soft-touch rubber coating over hard plastic", "The grin was redesigned four times to look 'friendlier'", "Tail is a separate poseable piece"], imageUrl: "https://images.unsplash.com/photo-1623039902375-29258147f39e?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "KJC-001", slug: "grumblestone", name: "Grumblestone", description: "A boulder-textured kaiju figure with a soft-touch rubber hide and a surprisingly friendly under-bite grin.", price: 6999, cost: 3100, stockQuantity: 22, categoryId: kaijuClub.id, franchise: "Kaiju Club", character: "Grumblestone", edition: "Standard", releaseDate: new Date("2026-04-05"), badges: ["NEW"], characterStory: "Grumblestone flattened three city blocks on his first day and apologized to every single building. He just wanted to see the ocean. Now the city keeps a lane open for him.", funFacts: ["Textured hide uses a soft-touch rubber coating over hard plastic", "The grin was redesigned four times to look 'friendlier'", "Tail is a separate poseable piece"], imageUrl: "https://images.unsplash.com/photo-1623039902375-29258147f39e?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "KJC-002" }, update: { sku: "KJC-002", slug: "tidal-terror-marnie", name: "Marnie the Tidal Terror", description: "A finned sea-kaiju figure with translucent teal accents and a wave-splash display base.", price: 9999, cost: 4500, stockQuantity: 12, categoryId: kaijuClub.id, franchise: "Kaiju Club", character: "Marnie", edition: "Deluxe", releaseDate: new Date("2026-05-28"), badges: ["FAN_FAVORITE"], characterStory: "Marnie surfaces once a year to redraw the coastline exactly how she likes it, then vanishes for another twelve months. Fishermen leave offerings. She mostly ignores them and takes the good boats anyway.", funFacts: ["Fins use a translucent two-tone plastic pour", "Splash base was sculpted from real wave-tank reference footage", "Second most requested figure in fan polls, right after Grumblestone"], imageUrl: "https://images.unsplash.com/photo-1608697341777-80b7461d93c3?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "KJC-002", slug: "tidal-terror-marnie", name: "Marnie the Tidal Terror", description: "A finned sea-kaiju figure with translucent teal accents and a wave-splash display base.", price: 9999, cost: 4500, stockQuantity: 12, categoryId: kaijuClub.id, franchise: "Kaiju Club", character: "Marnie", edition: "Deluxe", releaseDate: new Date("2026-05-28"), badges: ["FAN_FAVORITE"], characterStory: "Marnie surfaces once a year to redraw the coastline exactly how she likes it, then vanishes for another twelve months. Fishermen leave offerings. She mostly ignores them and takes the good boats anyway.", funFacts: ["Fins use a translucent two-tone plastic pour", "Splash base was sculpted from real wave-tank reference footage", "Second most requested figure in fan polls, right after Grumblestone"], imageUrl: "https://images.unsplash.com/photo-1608697341777-80b7461d93c3?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "KJC-003" }, update: { sku: "KJC-003", slug: "cinderjaw", name: "Cinderjaw", description: "A molten-cracked kaiju figure with heat-reactive color-shift paint across its back plates.", price: 13999, cost: 6300, stockQuantity: 7, categoryId: kaijuClub.id, franchise: "Kaiju Club", character: "Cinderjaw", edition: "Exclusive", releaseDate: new Date("2026-07-08"), badges: ["LIMITED", "PRE_ORDER"], characterStory: "Cinderjaw sleeps for decades at a time and wakes up furious about it every single time. The city has learned to just reschedule around him rather than argue.", funFacts: ["Back plates use color-shift paint that reacts to warm hands", "Sculpt required a custom mold just for the cracked-lava texture", "Exclusive to this release window only"], imageUrl: "https://images.unsplash.com/photo-1623039958673-08c3f4376009?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "KJC-003", slug: "cinderjaw", name: "Cinderjaw", description: "A molten-cracked kaiju figure with heat-reactive color-shift paint across its back plates.", price: 13999, cost: 6300, stockQuantity: 7, categoryId: kaijuClub.id, franchise: "Kaiju Club", character: "Cinderjaw", edition: "Exclusive", releaseDate: new Date("2026-07-08"), badges: ["LIMITED", "PRE_ORDER"], characterStory: "Cinderjaw sleeps for decades at a time and wakes up furious about it every single time. The city has learned to just reschedule around him rather than argue.", funFacts: ["Back plates use color-shift paint that reacts to warm hands", "Sculpt required a custom mold just for the cracked-lava texture", "Exclusive to this release window only"], imageUrl: "https://images.unsplash.com/photo-1623039958673-08c3f4376009?auto=format&fit=crop&w=1000&q=80" } }),
-
-    // Artist Proofs
-    prisma.product.upsert({ where: { sku: "IND-001" }, update: { sku: "IND-001", slug: "marigold-the-tender", name: "Marigold the Tender", description: "A soft-sculpt art figure with a hand-painted floral wash finish, individually numbered on the base.", price: 7999, cost: 3600, stockQuantity: 18, categoryId: indieArtists.id, franchise: "Artist Proofs", character: "Marigold", edition: "Standard", releaseDate: new Date("2026-03-18"), badges: ["NEW"], characterStory: "Marigold doesn't come from a franchise or a fight scene, just from an artist's sketchbook margin that got out of hand. She's meant to just sit somewhere quiet and be looked at.", funFacts: ["Each figure is individually numbered by hand", "Floral wash finish means no two are painted exactly alike", "First release from the studio's Artist Proofs open-call program"], imageUrl: "https://images.unsplash.com/photo-1781543423089-dc61428dbbfa?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "IND-001", slug: "marigold-the-tender", name: "Marigold the Tender", description: "A soft-sculpt art figure with a hand-painted floral wash finish, individually numbered on the base.", price: 7999, cost: 3600, stockQuantity: 18, categoryId: indieArtists.id, franchise: "Artist Proofs", character: "Marigold", edition: "Standard", releaseDate: new Date("2026-03-18"), badges: ["NEW"], characterStory: "Marigold doesn't come from a franchise or a fight scene, just from an artist's sketchbook margin that got out of hand. She's meant to just sit somewhere quiet and be looked at.", funFacts: ["Each figure is individually numbered by hand", "Floral wash finish means no two are painted exactly alike", "First release from the studio's Artist Proofs open-call program"], imageUrl: "https://images.unsplash.com/photo-1781543423089-dc61428dbbfa?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "IND-002" }, update: { sku: "IND-002", slug: "driftwood-dennis", name: "Driftwood Dennis", description: "A textured art-toy figure cast to resemble weathered driftwood, with a matte sealed finish and a cork display base.", price: 10999, cost: 4900, stockQuantity: 9, categoryId: indieArtists.id, franchise: "Artist Proofs", character: "Dennis", edition: "Deluxe", releaseDate: new Date("2026-06-30"), badges: ["LIMITED", "FAN_FAVORITE"], characterStory: "Dennis started as a doodle of what furniture might look like if it got up and walked to the beach. The artist liked him too much to leave him as a sketch.", funFacts: ["Cork base is a real cork disc, not molded plastic", "Surface texture is hand-carved into the master sculpt", "Limited to one small-batch production run"], imageUrl: "https://images.unsplash.com/photo-1690041638795-14c34f90da9a?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "IND-002", slug: "driftwood-dennis", name: "Driftwood Dennis", description: "A textured art-toy figure cast to resemble weathered driftwood, with a matte sealed finish and a cork display base.", price: 10999, cost: 4900, stockQuantity: 9, categoryId: indieArtists.id, franchise: "Artist Proofs", character: "Dennis", edition: "Deluxe", releaseDate: new Date("2026-06-30"), badges: ["LIMITED", "FAN_FAVORITE"], characterStory: "Dennis started as a doodle of what furniture might look like if it got up and walked to the beach. The artist liked him too much to leave him as a sketch.", funFacts: ["Cork base is a real cork disc, not molded plastic", "Surface texture is hand-carved into the master sculpt", "Limited to one small-batch production run"], imageUrl: "https://images.unsplash.com/photo-1690041638795-14c34f90da9a?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "IND-003" }, update: { sku: "IND-003", slug: "static-bloom", name: "Static Bloom", description: "An abstract resin figure with a swirled, hand-poured colorway; no two castings share the exact same pattern.", price: 15999, cost: 7400, stockQuantity: 4, categoryId: indieArtists.id, franchise: "Artist Proofs", character: "Static Bloom", edition: "Chase", releaseDate: new Date("2026-08-10"), badges: ["PRE_ORDER", "LIMITED"], characterStory: "Static Bloom isn't really a character at all, just a shape the artist kept returning to until it felt like one. Collectors have started giving her backstories of their own, and the studio has started listening.", funFacts: ["Hand-poured resin means every unit is a unique colorway", "Smallest production run in the entire catalog", "Studio now takes fan-submitted lore for future releases"], imageUrl: "https://images.unsplash.com/photo-1767026916692-aa8f9cd220ef?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "IND-003", slug: "static-bloom", name: "Static Bloom", description: "An abstract resin figure with a swirled, hand-poured colorway; no two castings share the exact same pattern.", price: 15999, cost: 7400, stockQuantity: 4, categoryId: indieArtists.id, franchise: "Artist Proofs", character: "Static Bloom", edition: "Chase", releaseDate: new Date("2026-08-10"), badges: ["PRE_ORDER", "LIMITED"], characterStory: "Static Bloom isn't really a character at all, just a shape the artist kept returning to until it felt like one. Collectors have started giving her backstories of their own, and the studio has started listening.", funFacts: ["Hand-poured resin means every unit is a unique colorway", "Smallest production run in the entire catalog", "Studio now takes fan-submitted lore for future releases"], imageUrl: "https://images.unsplash.com/photo-1767026916692-aa8f9cd220ef?auto=format&fit=crop&w=1000&q=80" } }),
-
-    // Pocket Pulls
-    prisma.product.upsert({ where: { sku: "MNI-001" }, update: { sku: "MNI-001", slug: "bitesize-bandit", name: "Bitesize Bandit", description: "A 3-inch blind-box mini with a mischievous grin, sold in a sealed box with a surprise colorway inside.", price: 1499, cost: 600, stockQuantity: 60, categoryId: miniIcons.id, franchise: "Pocket Pulls", character: "Bitesize Bandit", edition: "Standard", releaseDate: new Date("2026-04-22"), badges: ["NEW"], characterStory: "Bitesize Bandit steals one small thing from every desk he sits on, a pen cap, a paperclip, never anything you'd miss. Collectors swear their missing staplers are his fault.", funFacts: ["Sold blind-boxed, so the colorway is a surprise on opening", "1-in-24 chance of a secret rare colorway", "Smallest figure in the entire catalog at 3 inches tall"], imageUrl: "https://images.unsplash.com/photo-1762215643003-d6fb6fa4c777?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "MNI-001", slug: "bitesize-bandit", name: "Bitesize Bandit", description: "A 3-inch blind-box mini with a mischievous grin, sold in a sealed box with a surprise colorway inside.", price: 1499, cost: 600, stockQuantity: 60, categoryId: miniIcons.id, franchise: "Pocket Pulls", character: "Bitesize Bandit", edition: "Standard", releaseDate: new Date("2026-04-22"), badges: ["NEW"], characterStory: "Bitesize Bandit steals one small thing from every desk he sits on, a pen cap, a paperclip, never anything you'd miss. Collectors swear their missing staplers are his fault.", funFacts: ["Sold blind-boxed, so the colorway is a surprise on opening", "1-in-24 chance of a secret rare colorway", "Smallest figure in the entire catalog at 3 inches tall"], imageUrl: "https://images.unsplash.com/photo-1762215643003-d6fb6fa4c777?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "MNI-002" }, update: { sku: "MNI-002", slug: "tiny-tempest", name: "Tiny Tempest", description: "A 4-inch mini figure with a swirled translucent-blue base meant to look like a captured gust of wind.", price: 1999, cost: 850, stockQuantity: 30, categoryId: miniIcons.id, franchise: "Pocket Pulls", character: "Tiny Tempest", edition: "Deluxe", releaseDate: new Date("2026-05-15"), badges: ["LIMITED"], characterStory: "Tiny Tempest is what happens when a much bigger storm spirit gets bottled down to desk size. She's still just as dramatic about it, just smaller.", funFacts: ["Translucent base uses the same resin process as the full-size Space Legends line", "Comes with a tiny cardboard 'storm warning' sign accessory", "Second entry in the Pocket Pulls elemental sub-series"], imageUrl: "https://images.unsplash.com/photo-1769345749373-d1407c84cdbf?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "MNI-002", slug: "tiny-tempest", name: "Tiny Tempest", description: "A 4-inch mini figure with a swirled translucent-blue base meant to look like a captured gust of wind.", price: 1999, cost: 850, stockQuantity: 30, categoryId: miniIcons.id, franchise: "Pocket Pulls", character: "Tiny Tempest", edition: "Deluxe", releaseDate: new Date("2026-05-15"), badges: ["LIMITED"], characterStory: "Tiny Tempest is what happens when a much bigger storm spirit gets bottled down to desk size. She's still just as dramatic about it, just smaller.", funFacts: ["Translucent base uses the same resin process as the full-size Space Legends line", "Comes with a tiny cardboard 'storm warning' sign accessory", "Second entry in the Pocket Pulls elemental sub-series"], imageUrl: "https://images.unsplash.com/photo-1769345749373-d1407c84cdbf?auto=format&fit=crop&w=1000&q=80" } }),
-    prisma.product.upsert({ where: { sku: "MNI-003" }, update: { sku: "MNI-003", slug: "pocket-paladin", name: "Pocket Paladin", description: "A 4-inch armored mini with a removable cape and a die-cast metal sword accessory.", price: 2499, cost: 1100, stockQuantity: 16, categoryId: miniIcons.id, franchise: "Pocket Pulls", character: "Pocket Paladin", edition: "Exclusive", releaseDate: new Date("2026-07-29"), badges: ["FAN_FAVORITE", "PRE_ORDER"], characterStory: "Pocket Paladin takes his oath just as seriously as any full-size knight, even though he's small enough to guard a desk drawer. He has never once left his post.", funFacts: ["Sword accessory is die-cast metal, not plastic", "Cape is removable and interchangeable with other Pocket Pulls figures", "Most pre-ordered mini in line history"], imageUrl: "https://images.unsplash.com/photo-1720630351963-93567f7a746d?auto=format&fit=crop&w=1000&q=80" }, create: { sku: "MNI-003", slug: "pocket-paladin", name: "Pocket Paladin", description: "A 4-inch armored mini with a removable cape and a die-cast metal sword accessory.", price: 2499, cost: 1100, stockQuantity: 16, categoryId: miniIcons.id, franchise: "Pocket Pulls", character: "Pocket Paladin", edition: "Exclusive", releaseDate: new Date("2026-07-29"), badges: ["FAN_FAVORITE", "PRE_ORDER"], characterStory: "Pocket Paladin takes his oath just as seriously as any full-size knight, even though he's small enough to guard a desk drawer. He has never once left his post.", funFacts: ["Sword accessory is die-cast metal, not plastic", "Cape is removable and interchangeable with other Pocket Pulls figures", "Most pre-ordered mini in line history"], imageUrl: "https://images.unsplash.com/photo-1720630351963-93567f7a746d?auto=format&fit=crop&w=1000&q=80" } }),
-  ]);
-
-  await prisma.customer.upsert({ where: { email: "demo@funkopie.store" }, update: {}, create: { name: "Demo Customer", email: "demo@funkopie.store", passwordHash: await bcrypt.hash("demo-password", 12), cart: { create: {} } } });
+  await prisma.customer.upsert({
+    where: { email: "demo@funkopie.store" },
+    update: {},
+    create: { name: "Demo Customer", email: "demo@funkopie.store", passwordHash: await bcrypt.hash("demo-password", 12), cart: { create: {} } },
+  });
 }
+
 main().finally(() => prisma.$disconnect());
