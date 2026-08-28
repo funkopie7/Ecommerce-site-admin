@@ -1,4 +1,4 @@
-# Mercury Commerce Admin
+# Funkopie Admin
 
 The ecommerce authority: products, categories, stock, customers, carts, checkout, and order fulfilment.
 

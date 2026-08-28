@@ -13,5 +13,5 @@ export default function AdminLogin() {
     router.push("/");
     router.refresh();
   }
-  return <main className="adminLoginShell"><form className="adminLoginCard" onSubmit={submit}><p className="adminKicker">SOAR / ADMIN</p><h1>Sign in to operations.</h1><label>Admin key<input required name="key" type="password" autoComplete="off" autoFocus/></label>{err && <p className="formError">{err}</p>}<button className="adminPrimary" type="submit">Enter workspace →</button></form></main>;
+  return <main className="adminLoginShell"><form className="adminLoginCard" onSubmit={submit}><p className="adminKicker">FUNKOPIE / ADMIN</p><h1>Sign in to operations.</h1><label>Admin key<input required name="key" type="password" autoComplete="off" autoFocus/></label>{err && <p className="formError">{err}</p>}<button className="adminPrimary" type="submit">Enter workspace →</button></form></main>;
 }
