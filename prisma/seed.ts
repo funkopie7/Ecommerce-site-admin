@@ -42,6 +42,6 @@ async function main() {
     prisma.product.upsert({ where: { sku: "MNI-003" }, update: {}, create: { sku: "MNI-003", slug: "pocket-paladin", name: "Pocket Paladin", description: "A 4-inch armored mini with a removable cape and a die-cast metal sword accessory.", price: 2499, cost: 1100, stockQuantity: 16, categoryId: miniIcons.id, franchise: "Mini Icons", character: "Pocket Paladin", edition: "Exclusive", releaseDate: new Date("2026-07-29"), badges: ["FAN_FAVORITE", "PRE_ORDER"], characterStory: "Pocket Paladin takes his oath just as seriously as any full-size knight, even though he's small enough to guard a desk drawer. He has never once left his post.", funFacts: ["Sword accessory is die-cast metal, not plastic", "Cape is removable and interchangeable with other Mini Icons figures", "Most pre-ordered mini in line history"], imageUrl: "https://images.unsplash.com/photo-1720630351963-93567f7a746d?auto=format&fit=crop&w=1000&q=80" } }),
   ]);
 
-  await prisma.customer.upsert({ where: { email: "demo@mercury.store" }, update: {}, create: { name: "Demo Customer", email: "demo@mercury.store", passwordHash: await bcrypt.hash("demo-password", 12), cart: { create: {} } } });
+  await prisma.customer.upsert({ where: { email: "demo@funkopie.store" }, update: {}, create: { name: "Demo Customer", email: "demo@funkopie.store", passwordHash: await bcrypt.hash("demo-password", 12), cart: { create: {} } } });
 }
 main().finally(() => prisma.$disconnect());
