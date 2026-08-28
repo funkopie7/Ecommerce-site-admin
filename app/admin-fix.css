@@ -1,11 +1,16 @@
 /* ===========================================================
-   Mercury Commerce Admin — operations ledger
-   Same stoneware/ceramics-studio tokens as the storefront, tuned
-   utilitarian: tighter spacing, real tabular data, less
-   whitespace-as-luxury. Every rule below styles a class actually
-   used in components/AdminWorkspace.tsx and app/admin/login/page.tsx
+   Mercury Commerce Admin — "premium card" dashboard (v2)
+   Same shared tokens as the storefront. White rounded cards on
+   a light gray page, black pill buttons, soft ambient shadows
+   instead of hairline borders, icon-in-rounded-square list rows,
+   solid-tinted status pills. Supersedes v1's dark-ledger sidebar
+   and hairline-bordered panels.
+
+   Every rule below styles a class actually used in
+   components/AdminWorkspace.tsx and app/admin/login/page.tsx
    (confirmed by grep + a manual read of both files, since the
-   sidebar's template-literal class `adminSidebar` doesn't match a
+   sidebar's template-literal class `adminSidebar` and the order
+   row's template-literal `orderStatus ${status}` don't match a
    plain className="..." grep).
 
    Specificity note: layout spacing is always keyed to a class
@@ -22,7 +27,7 @@
   background: var(--ground);
 }
 
-/* ---------- sidebar: the ledger ---------- */
+/* ---------- sidebar ---------- */
 .adminSidebar {
   background: var(--ink);
   color: var(--surface);
@@ -32,12 +37,12 @@
   min-height: 100vh;
 }
 .adminBrand {
-  font: 600 26px/1 var(--font-display), serif;
-  letter-spacing: -0.02em;
+  font: 700 22px/1 var(--font-body), sans-serif;
+  letter-spacing: -0.01em;
   text-align: left;
   padding: 0 8px;
 }
-.adminBrand span { color: var(--brass); font-style: italic; }
+.adminBrand span { color: var(--brass); font-style: normal; }
 .adminBrand small {
   display: block;
   margin: 4px 0 0 1px;
@@ -54,68 +59,35 @@
   text-transform: uppercase;
 }
 
-/* the ledger rule: a vertical line down the nav, with a tick
-   (the 01-05 numeral, load-bearing rather than decorative) per item */
+/* nav: flat filled pills, no ledger rule / no numbered ticks */
 .adminNav {
-  position: relative;
   display: grid;
-  gap: 3px;
-  counter-reset: navstep;
-  padding-left: 20px;
-}
-.adminNav::before {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 6px;
-  bottom: 6px;
-  width: 1px;
-  background: rgba(245, 243, 234, 0.18);
+  gap: 4px;
 }
 .adminNav button {
-  position: relative;
-  counter-increment: navstep;
-  border-radius: 6px;
-  color: rgba(245, 243, 234, 0.62);
+  border-radius: var(--radius-pill);
+  color: rgba(245, 243, 234, 0.68);
   text-align: left;
-  padding: 9px 10px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   font-size: 13px;
   font-weight: 500;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
-.adminNav button::before {
-  content: counter(navstep, decimal-leading-zero);
-  position: absolute;
-  left: -20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 12px;
-  text-align: right;
-  font: 500 9px var(--font-mono), monospace;
-  color: rgba(245, 243, 234, 0.35);
+.adminNav button:hover { background: rgba(245, 243, 234, 0.1); color: var(--surface); }
+.adminNav button.active {
+  background: var(--accent);
+  color: var(--surface);
+  font-weight: 600;
+  box-shadow: var(--shadow-pill);
 }
-.adminNav button::after {
-  content: "";
-  position: absolute;
-  left: -12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 5px;
-  height: 1px;
-  background: rgba(245, 243, 234, 0.35);
-}
-.adminNav button:hover { background: rgba(245, 243, 234, 0.08); color: var(--surface); }
-.adminNav button.active { background: var(--accent); color: var(--surface); }
-.adminNav button.active::before,
-.adminNav button.active::after { background: var(--accent-soft); color: var(--accent-soft); }
 .adminNav b {
   margin-left: auto;
   background: var(--brass);
   color: var(--ink);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 1px 7px;
   font: 500 9px var(--font-mono), monospace;
 }
@@ -142,7 +114,6 @@
 .adminPage { min-width: 0; }
 .adminTopbar {
   height: 54px;
-  border-bottom: 1px solid var(--line);
   padding: 0 clamp(18px, 4vw, 48px);
   display: flex;
   align-items: center;
@@ -150,7 +121,7 @@
   font: 500 10px var(--font-mono), monospace;
   letter-spacing: 0.06em;
   color: var(--ink-soft);
-  background: var(--surface);
+  background: var(--ground);
 }
 .adminTopbar > div { display: flex; align-items: center; gap: 7px; }
 .adminStatusDot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
@@ -159,7 +130,7 @@
 .adminContent { padding: clamp(24px, 3.5vw, 48px); max-width: var(--max); margin: auto; }
 
 .adminIntro { display: flex; justify-content: space-between; gap: 20px; align-items: flex-end; }
-.adminIntro h1 { max-width: 560px; margin: 6px 0 0; font-size: clamp(28px, 3.4vw, 44px); line-height: 1.02; letter-spacing: -0.02em; }
+.adminIntro h1 { max-width: 560px; margin: 6px 0 0; font-size: clamp(26px, 3.2vw, 40px); font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
 .adminLead { color: var(--ink-soft); font-size: 13px; max-width: 340px; line-height: 1.6; margin: 12px 0 0; }
 .adminKicker {
   margin: 0;
@@ -168,22 +139,25 @@
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
+
+/* ---------- pill buttons ---------- */
 .adminPrimary {
-  border-radius: 6px;
-  background: var(--accent);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
   color: var(--surface);
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 11px 16px;
+  padding: 13px 22px;
   white-space: nowrap;
   font-size: 12px; font-weight: 600;
-  transition: background-color 0.15s ease;
+  box-shadow: var(--shadow-pill);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
-.adminPrimary:hover { background: #33482d; }
+.adminPrimary:hover { background: #2c2c22; box-shadow: var(--shadow-card); transform: translateY(-1px); }
 .adminNotice {
   background: var(--accent-soft);
   color: var(--accent);
-  border-radius: 6px;
-  padding: 10px 14px;
+  border-radius: var(--radius-input);
+  padding: 10px 16px;
   margin: 18px 0 0;
   display: flex; justify-content: space-between; align-items: center;
   font-size: 12px; font-weight: 600;
@@ -191,13 +165,13 @@
 .adminNotice button { font-size: 16px; line-height: 1; }
 
 /* ---------- stats ---------- */
-.adminStats { margin: 32px 0 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.adminStats { margin: 32px 0 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .adminStats article {
   min-height: 128px;
-  border: 1px solid var(--line);
-  border-radius: var(--card);
+  border-radius: var(--radius-card);
   background: var(--surface);
-  padding: 16px;
+  box-shadow: var(--shadow-card);
+  padding: 20px;
   display: flex; flex-direction: column;
 }
 .adminStats span { color: var(--ink-soft); font: 500 10px var(--font-mono), monospace; letter-spacing: 0.05em; }
@@ -213,7 +187,7 @@
 
 /* ---------- section heading rows ---------- */
 .adminBlockHeading { display: flex; justify-content: space-between; align-items: flex-end; margin: 0 0 14px; }
-.adminBlockHeading h2 { font-size: 22px; line-height: 1; letter-spacing: -0.01em; margin: 4px 0 0; }
+.adminBlockHeading h2 { font-size: 20px; font-weight: 700; line-height: 1; letter-spacing: -0.01em; margin: 4px 0 0; }
 .adminBlockHeading > button {
   display: inline-flex; align-items: center; gap: 5px;
   color: var(--accent);
@@ -223,12 +197,28 @@
 .adminOrdersHeading { margin-top: 44px; }
 
 /* ---------- product grid ---------- */
-.adminFeatureGrid, .adminCatalogGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.adminProductCard { border: 1px solid var(--line); background: var(--surface); border-radius: var(--card); overflow: hidden; min-width: 0; }
-.adminProductImage { height: 160px; background: var(--accent-soft); display: grid; place-items: center; color: var(--accent); overflow: hidden; }
-.adminProductImage img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.adminFeatureGrid, .adminCatalogGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.adminProductCard {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  min-width: 0;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.adminProductCard:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
+.adminProductImage {
+  height: 160px;
+  margin: 12px;
+  border-radius: var(--radius-image);
+  background: var(--surface-soft);
+  display: grid; place-items: center;
+  color: var(--accent);
+  overflow: hidden;
+}
+.adminProductImage img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: var(--radius-image); }
 .adminProductImage .adminIcon { width: 28px; height: 28px; }
-.adminProductMeta { padding: 13px 14px 12px; }
+.adminProductMeta { padding: 4px 16px 18px; }
 .adminProductMeta > div, .adminProductMeta footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .adminProductMeta > div > span, .adminProductMeta p { color: var(--ink-soft); font: 500 10px var(--font-mono), monospace; }
 .adminProductMeta footer button {
@@ -236,7 +226,7 @@
   color: var(--accent); text-decoration: underline; text-underline-offset: 4px;
   font-weight: 600; font-size: 12px;
 }
-.adminProductMeta h3 { margin: 10px 0 4px; font-size: 14px; letter-spacing: -0.01em; }
+.adminProductMeta h3 { margin: 10px 0 4px; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
 .adminProductMeta p { margin: 0; }
 .adminProductMeta footer { margin-top: 14px; }
 .adminProductMeta footer strong {
@@ -247,33 +237,41 @@
 .productLive, .productDraft {
   font: 500 9px var(--font-mono), monospace;
   font-style: normal;
-  border-radius: 999px;
-  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  padding: 4px 9px;
 }
 .productLive { background: var(--accent-soft); color: var(--accent); }
-.productDraft { background: var(--line); color: var(--ink-soft); }
+.productDraft { background: var(--surface-soft); color: var(--ink-soft); }
 .lowStock { color: var(--danger) !important; }
 
-/* ---------- orders ---------- */
-.adminOrderList, .adminTable {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  border-radius: var(--card);
-  overflow: hidden;
+/* ---------- icon-in-rounded-square tile (list-row icons only) ---------- */
+.iconTile {
+  width: 38px; height: 38px;
+  flex: none;
+  border-radius: var(--radius-input);
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  display: grid;
+  place-items: center;
 }
+.iconTile .adminIcon { width: 17px; height: 17px; }
+
+/* ---------- orders ---------- */
+.adminOrderList { display: grid; gap: 10px; }
 .adminOrderRow {
   min-height: 60px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
+  padding: 14px 18px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   display: grid;
-  grid-template-columns: 1.6fr 0.7fr 0.9fr 0.7fr;
-  gap: 10px;
+  grid-template-columns: auto 1.6fr 0.7fr 0.9fr 0.7fr;
+  gap: 14px;
   align-items: center;
 }
-.adminOrderRow:last-child { border: 0; }
 .adminOrderRow p { margin: 0; color: var(--ink-soft); font: 500 10px var(--font-mono), monospace; }
 .adminOrderRow strong { font-size: 13px; font-weight: 600; }
-.adminOrderRow > span {
+.adminOrderRow > span:not(.iconTile) {
   font-family: var(--font-mono), monospace;
   font-variant-numeric: tabular-nums;
   font-size: 12px; font-weight: 600;
@@ -287,57 +285,75 @@
 .adminOrderRow button:disabled { opacity: 0.45; cursor: default; text-decoration: none; }
 .adminOrderPage { margin-top: 32px; }
 
-/* order status pills — distinct accent/brass/danger treatment per status */
+/* order status pills — solid tinted background per status */
 .orderStatus {
   justify-self: start;
   font: 500 9px var(--font-mono), monospace;
   font-style: normal;
   letter-spacing: 0.04em;
-  border-radius: 999px;
-  padding: 5px 9px;
-  background: var(--line);
+  border-radius: var(--radius-pill);
+  padding: 5px 10px;
+  background: var(--surface-soft);
   color: var(--ink-soft);
 }
-.orderStatus.pending { background: var(--line); color: var(--ink-soft); }
+.orderStatus.pending { background: var(--surface-soft); color: var(--ink-soft); }
 .orderStatus.confirmed { background: var(--accent-soft); color: var(--accent); }
-.orderStatus.packed { background: #F0E4C8; color: var(--brass); }
+.orderStatus.packed { background: rgba(176, 138, 78, 0.18); color: var(--brass); }
 .orderStatus.shipped { background: var(--brass); color: var(--surface); }
 .orderStatus.delivered { background: var(--accent); color: var(--surface); }
-.orderStatus.cancelled { background: var(--danger); color: var(--surface); }
+.orderStatus.cancelled { background: var(--danger-soft); color: var(--danger); }
 
 /* ---------- toolbar / search ---------- */
 .adminToolbar { margin: 30px 0 14px; display: flex; align-items: center; gap: 12px; }
 .adminToolbar label {
-  height: 36px;
+  height: 40px;
   min-width: min(100%, 320px);
-  border-bottom: 1px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-pill);
+  padding: 0 16px;
   display: flex; align-items: center; gap: 8px;
 }
 .adminToolbar input { width: 100%; font-size: 13px; }
 .adminToolbar > span { font: 500 10px var(--font-mono), monospace; color: var(--ink-soft); margin-left: auto; }
-.adminTextButton { color: var(--accent); font-weight: 600; font-size: 12px; }
+.adminTextButton {
+  border-radius: var(--radius-pill);
+  background: var(--surface-soft);
+  color: var(--ink);
+  padding: 10px 18px;
+  font-weight: 600; font-size: 12px;
+}
 
 .adminEmpty {
   grid-column: 1 / -1;
-  border: 1px dashed var(--line);
-  border-radius: var(--card);
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   padding: 40px;
   text-align: center;
   color: var(--ink-soft);
 }
 
 /* ---------- categories / collections ---------- */
-.adminCollectionGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 32px; }
-.adminCollectionGrid article, .adminAddCollection {
+.adminCollectionGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
+.adminCollectionGrid article {
+  min-height: 180px;
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  text-align: left;
+}
+.adminAddCollection {
   min-height: 180px;
   padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--card);
-  background: var(--surface);
+  border-radius: var(--radius-card);
+  background: transparent;
+  border: 1.5px dashed var(--line);
   text-align: left;
 }
 .adminCollectionGrid article > span { color: var(--brass); font: 500 11px var(--font-mono), monospace; }
-.adminCollectionGrid h2 { font-size: 24px; line-height: 1; letter-spacing: -0.01em; margin: 26px 0 6px; }
+.adminCollectionGrid h2 { font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: -0.01em; margin: 26px 0 6px; }
 .adminCollectionGrid p { color: var(--ink-soft); font-size: 12px; margin: 0; }
 .adminCollectionGrid article button {
   margin-top: 24px;
@@ -346,21 +362,25 @@
   font-weight: 600; font-size: 12px;
 }
 .adminAddCollection {
-  border-style: dashed;
-  background: transparent;
   color: var(--accent);
   font-size: 13px; font-weight: 600;
   display: flex; gap: 8px; align-items: center; justify-content: center;
 }
 
 /* ---------- inventory table ---------- */
-.adminTable { margin-top: 2px; }
+.adminTable {
+  margin-top: 2px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
 .adminTableHeader, .adminStockRow {
   display: grid;
-  grid-template-columns: 1.5fr 0.8fr 0.7fr;
+  grid-template-columns: 46px 1.5fr 0.8fr 0.7fr;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 14px;
+  padding: 12px 18px;
 }
 .adminTableHeader {
   background: var(--ground);
@@ -369,7 +389,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
-.adminStockRow { min-height: 64px; border-top: 1px solid var(--line); }
+.adminStockRow { min-height: 68px; border-top: 1px solid var(--line); }
 .adminStockRow strong, .adminStockRow small { display: block; }
 .adminStockRow strong { font-size: 13px; font-weight: 600; }
 .adminStockRow small { color: var(--ink-soft); font: 500 10px var(--font-mono), monospace; margin-top: 3px; }
@@ -379,12 +399,11 @@
   font-size: 14px; font-weight: 600; font-style: normal;
 }
 .adminStockRow > b small { display: inline; font-size: 9px; }
-.adminStepper { display: flex; gap: 5px; }
+.adminStepper { display: flex; gap: 6px; }
 .adminStepper button {
-  width: 26px; height: 26px;
-  border: 1px solid var(--line);
+  width: 28px; height: 28px;
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--surface-soft);
   color: var(--accent);
   font-size: 16px;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -394,33 +413,32 @@
 /* ---------- modals ---------- */
 .adminModalBack {
   position: fixed; inset: 0; z-index: 30;
-  background: rgba(35, 38, 31, 0.5);
+  background: rgba(21, 21, 15, 0.5);
   display: grid; place-items: center;
   padding: 20px;
 }
 .adminModal {
   width: min(460px, 100%);
-  border-radius: var(--card);
-  background: var(--ground);
-  padding: 26px;
-  display: grid; gap: 13px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  padding: 28px;
+  display: grid; gap: 14px;
   position: relative;
-  box-shadow: 0 25px 70px rgba(35, 38, 31, 0.28);
+  box-shadow: var(--shadow-card-hover);
 }
-.adminModal h2 { font-size: 26px; line-height: 1; letter-spacing: -0.01em; margin: 0 0 6px; }
+.adminModal h2 { font-size: 24px; font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; margin: 0 0 6px; }
 .adminModal label { display: grid; gap: 6px; font-size: 11px; font-weight: 600; color: var(--ink-soft); }
 .adminModal input, .adminModal select {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface);
-  padding: 10px;
+  border-radius: var(--radius-input);
+  background: var(--surface-soft);
+  padding: 11px 13px;
   outline-color: var(--accent);
   font-size: 13px;
   color: var(--ink);
 }
 .adminModalPair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.adminModalClose { position: absolute; right: 16px; top: 15px; }
+.adminModalClose { position: absolute; right: 18px; top: 18px; color: var(--ink-soft); }
 .adminModalClose .adminIcon { width: 18px; height: 18px; }
 
 /* ---------- admin login ---------- */
@@ -433,22 +451,21 @@
 }
 .adminLoginCard {
   width: min(400px, 100%);
-  border: 1px solid var(--line);
   background: var(--surface);
-  border-radius: var(--card);
-  padding: 34px 28px;
+  border-radius: var(--radius-card);
+  padding: 36px 30px;
   display: grid;
   gap: 14px;
-  box-shadow: 0 20px 60px rgba(35, 38, 31, 0.1);
+  box-shadow: var(--shadow-card-hover);
 }
-.adminLoginCard h1 { font-size: 28px; line-height: 1.05; letter-spacing: -0.015em; margin: 4px 0 6px; }
+/* the one hero moment left in the admin app — Fraunces stays here only */
+.adminLoginCard h1 { font-family: var(--font-display), serif; font-weight: 600; font-size: 28px; line-height: 1.05; letter-spacing: -0.015em; margin: 4px 0 6px; }
 .adminLoginCard label { display: grid; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
 .adminLoginCard input {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--ground);
-  padding: 11px 12px;
+  border-radius: var(--radius-input);
+  background: var(--surface-soft);
+  padding: 12px 14px;
   outline-color: var(--accent);
   font-size: 14px;
   color: var(--ink);
@@ -472,15 +489,16 @@
   .adminTopbar > p { margin-left: 10px; margin-right: auto; }
   .adminContent { padding: 28px 18px; }
   .adminIntro { align-items: flex-start; flex-direction: column; }
-  .adminIntro h1 { font-size: 38px; letter-spacing: -0.02em; }
+  .adminIntro h1 { font-size: 32px; letter-spacing: -0.02em; }
   .adminStats { grid-template-columns: 1fr; margin: 28px 0 34px; }
   .adminStats article { min-height: 112px; }
   .adminFeatureGrid, .adminCatalogGrid, .adminCollectionGrid { grid-template-columns: 1fr; }
   .adminProductImage { height: 190px; }
-  .adminOrderRow { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .adminOrderRow button { justify-self: start; }
+  .adminOrderRow { grid-template-columns: auto 1fr 1fr; gap: 8px 10px; }
+  .adminOrderRow .iconTile { grid-row: 1 / 3; }
+  .adminOrderRow button { grid-column: 2 / -1; justify-self: start; }
   .adminTableHeader { display: none; }
-  .adminStockRow { grid-template-columns: 1fr auto; gap: 12px; }
+  .adminStockRow { grid-template-columns: 40px 1fr auto; gap: 10px; }
   .adminStepper { grid-column: 1 / -1; }
   .adminToolbar { flex-wrap: wrap; }
   .adminToolbar > span { margin-left: 0; width: 100%; }

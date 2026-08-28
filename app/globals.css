@@ -1,33 +1,46 @@
 /* ===========================================================
-   Mercury Commerce — "considered objects" design tokens
-   Warm stoneware / ceramics-studio palette. Shared token system,
-   admin/ops half. See admin-fix.css for component styles built
-   on the same tokens. :root block is byte-identical to the
-   storefront's app/globals.css — do not edit values here without
-   updating both.
+   Mercury Commerce — "premium card" design tokens (v2)
+   Soft-shadow rounded cards, pill buttons, bold sans type.
+   Supersedes v1's editorial hairline/ledger-rule system.
+   Shared token system, admin/ops half. See admin-fix.css for
+   component styles built on the same tokens. :root block is
+   byte-identical to the storefront's app/globals.css — do not
+   edit values here without updating both. (--max is the one
+   admin-only rhythm token kept alongside the shared set, since
+   it's still used to cap the dashboard content width.)
    =========================================================== */
 
 :root {
   /* color */
-  --ground: #EAE6DA;
-  --surface: #F5F3EA;
-  --ink: #23261F;
-  --ink-soft: #5B6154;
-  --accent: #3F5A45;
-  --accent-soft: #DCE3D6;
+  --ground: #F4F3EF;
+  --surface: #FFFFFF;
+  --surface-soft: #F7F8F5;
+  --ink: #15150F;
+  --ink-soft: #6B6A62;
+  --accent: #1F3D2E;
+  --accent-soft: #E3ECE3;
   --brass: #B08A4E;
-  --line: #D9D2C1;
-  --danger: #A6432F;
+  --line: #ECEAE4;
+  --danger: #B23B3B;
+  --danger-soft: #F4E4E1;
+
+  /* shadow */
+  --shadow-card: 0 1px 2px rgba(21,21,15,0.04), 0 12px 28px -12px rgba(21,21,15,0.12);
+  --shadow-card-hover: 0 1px 2px rgba(21,21,15,0.05), 0 20px 40px -16px rgba(21,21,15,0.18);
+  --shadow-pill: 0 1px 2px rgba(21,21,15,0.06);
+
+  /* radius */
+  --radius-card: 22px;
+  --radius-image: 18px;
+  --radius-pill: 999px;
+  --radius-input: 14px;
 
   /* type */
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: var(--font-mono-loaded), "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  /* rhythm */
-  --frame: 28px;
-  --card: 3px;
-  --gutter: 32px;
+  /* admin-only rhythm */
   --max: 1220px;
 
   color-scheme: light;
@@ -71,10 +84,13 @@ select:focus-visible,
   }
 }
 
-/* ---------- type scale (data-dense register: tighter than the storefront) ---------- */
+/* ---------- type scale ----------
+   Inter carries the entire dashboard chrome. Fraunces is reserved
+   for the login screen's h1 only (see admin-fix.css) — the one
+   hero moment this app gets, per the v2 spec. */
 h1, h2 {
-  font-family: var(--font-display), serif;
-  font-weight: 600;
+  font-family: var(--font-body), sans-serif;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ink);
 }
