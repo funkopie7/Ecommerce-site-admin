@@ -260,7 +260,7 @@ const PRODUCTS: Seed[] = [
     badges: ["PRE_ORDER", "LIMITED"],
     characterStory: "Sheriff Woody, Andy's favourite toy and the one who keeps the rest of the toy box in line. Hat is removable, as it should be.",
     funFacts: ["Removable cowboy hat", "Bendable arms and legs for posing", "Yellow plaid shirt and cow-print vest are printed fabric-effect"],
-    imageUrl: "https://images.unsplash.com/photo-1603557092510-263cac6e7ae6?auto=format&fit=crop&w=1000&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1649903303524-a69737c90212?auto=format&fit=crop&w=1000&q=80",
   },
   {
     sku: "IND-002",
