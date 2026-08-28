@@ -52,7 +52,7 @@
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
-  background: var(--ground);
+  background: var(--cream);
   color: var(--ink);
   font-family: var(--font-body), sans-serif;
   font-size: 15px;
@@ -90,11 +90,12 @@ select:focus-visible,
    for the login screen's h1 only (see admin-fix.css) — the one
    hero moment this app gets, per the v2 spec. */
 h1, h2 {
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ink);
 }
+.sticker { font-family: var(--font-sticker); }
 .eyebrow {
   font: 500 10px/1 var(--font-mono), monospace;
   letter-spacing: 0.13em;
