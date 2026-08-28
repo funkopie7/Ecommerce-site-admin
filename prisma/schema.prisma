@@ -45,6 +45,15 @@ model Product {
   stockQuantity Int @default(0)
   imageUrl String?
   visible Boolean @default(true)
+  franchise String?
+  character String?
+  edition String?
+  releaseDate DateTime?
+  badges String[] @default([])
+  characterStory String?
+  funFacts String[] @default([])
+  wishlistItems WishlistItem[]
+  conversations Conversation[]
   categoryId String
   category Category @relation(fields: [categoryId], references: [id])
   cartItems CartItem[]
@@ -63,6 +72,8 @@ model Customer {
   addresses Address[]
   cart Cart?
   orders Order[]
+  wishlist Wishlist?
+  conversations Conversation[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -140,5 +151,56 @@ model InventoryAdjustment {
   resultingQuantity Int
   reason String
   adminEmail String
+  createdAt DateTime @default(now())
+}
+
+model Wishlist {
+  id String @id @default(cuid())
+  customerId String @unique
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items WishlistItem[]
+  updatedAt DateTime @updatedAt
+}
+
+model WishlistItem {
+  id String @id @default(cuid())
+  wishlistId String
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId String
+  product Product @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+  @@unique([wishlistId, productId])
+}
+
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
+enum MessageSender {
+  CUSTOMER
+  ADMIN
+}
+
+model Conversation {
+  id String @id @default(cuid())
+  customerId String
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId String?
+  product Product? @relation(fields: [productId], references: [id])
+  status ConversationStatus @default(OPEN)
+  lastMessageAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  messages Message[]
+}
+
+model Message {
+  id String @id @default(cuid())
+  conversationId String
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender MessageSender
+  body String
+  readByCustomer Boolean @default(false)
+  readByAdmin Boolean @default(false)
   createdAt DateTime @default(now())
 }
