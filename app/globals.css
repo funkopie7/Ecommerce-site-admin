@@ -89,7 +89,7 @@ select:focus-visible,
    Inter carries the entire dashboard chrome. Fraunces is reserved
    for the login screen's h1 only (see admin-fix.css) — the one
    hero moment this app gets, per the v2 spec. */
-h1, h2 {
+h1, h2, h3 {
   font-family: var(--font-display), sans-serif;
   font-weight: 700;
   letter-spacing: -0.01em;
