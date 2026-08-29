@@ -1,3 +1,4 @@
 // app/api/auth/logout/route.ts
 import { NextResponse } from "next/server";
-export async function POST() { const response = NextResponse.json({ ok: true }); response.cookies.delete("customer_session"); return response; }
+import { clearCustomerCookie } from "@/lib/auth";
+export async function POST() { return clearCustomerCookie(NextResponse.json({ ok: true })); }
