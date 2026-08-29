@@ -96,7 +96,8 @@ export const CONVERSATION_STATUSES = ["OPEN", "CLOSED"] as const;
 export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
 export type MessageSender = "CUSTOMER" | "ADMIN";
 
-export type ChatMessage = { id: string; sender: MessageSender; body: string; createdAt: string };
+/** `body` is "" on a message that is only an attachment — never both empty. */
+export type ChatMessage = { id: string; sender: MessageSender; body: string; imageUrl: string | null; createdAt: string };
 /** What /api/admin/conversations includes for product context — not a full Product. */
 export type ChatProduct = { id: string; name: string; slug: string; imageUrl: string | null };
 type ChatBase = {
@@ -110,7 +111,7 @@ type ChatBase = {
 
 /** Inbox row: the newest message flattened out, plus the unread-from-customer count. */
 export type ConversationRow = ChatBase & {
-  lastMessage: { body: string; sender: MessageSender; createdAt: string } | null;
+  lastMessage: { body: string; imageUrl: string | null; sender: MessageSender; createdAt: string } | null;
   unread: number;
 };
 /** Opened thread: the whole history, oldest first. */

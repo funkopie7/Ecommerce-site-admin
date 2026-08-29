@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle2, RotateCcw, Send } from "lucide-react";
+import { CheckCircle2, ImagePlus, RotateCcw, Send, X } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,11 @@ function ago(value: string) {
 
 const clockTime = (value: string) =>
   new Date(value).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+/* An attachment-only message has an empty body, so a preview that printed
+   `body` alone would render a row that looks like it has no message at all. */
+const preview = (message: { body: string; imageUrl: string | null }) =>
+  message.body || (message.imageUrl ? "📷 Photo" : "");
 
 export function MessagesView() {
   const [filter, setFilter] = React.useState<Filter>("OPEN");
@@ -134,7 +139,7 @@ export function MessagesView() {
                     <div className="flex items-center justify-between gap-2">
                       <span className="min-w-0 truncate text-xs text-muted-foreground">
                         {row.lastMessage
-                          ? `${row.lastMessage.sender === "ADMIN" ? "You: " : ""}${row.lastMessage.body}`
+                          ? `${row.lastMessage.sender === "ADMIN" ? "You: " : ""}${preview(row.lastMessage)}`
                           : "No messages"}
                       </span>
                       <span className="flex shrink-0 items-center gap-1.5">
@@ -169,8 +174,14 @@ function ThreadPane({
   const [thread, setThread] = React.useState<ConversationThread | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState("");
+  /* The picked attachment is held as an already-uploaded URL rather than a
+     File: the upload is what can be slow and can fail, so it happens on pick
+     and Send stays a single fast call that either works or doesn't. */
+  const [attachment, setAttachment] = React.useState<string | null>(null);
+  const [uploading, setUploading] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const scroller = React.useRef<HTMLDivElement>(null);
+  const filePicker = React.useRef<HTMLInputElement>(null);
 
   const load = React.useCallback(async () => {
     if (!conversationId) return;
@@ -188,6 +199,7 @@ function ThreadPane({
   React.useEffect(() => {
     setThread(null);
     setDraft("");
+    setAttachment(null);
     void load();
     if (!conversationId) return;
     const timer = setInterval(() => void load(), THREAD_POLL_MS);
@@ -201,17 +213,40 @@ function ThreadPane({
     if (node) node.scrollTop = node.scrollHeight;
   }, [thread?.messages.length]);
 
+  /* Same shape as ProductDialog's product-photo upload, pointed at the chat
+     bucket: whatever comes off disk is re-encoded to .webp server-side and
+     comes back as the URL the message will carry. */
+  async function attach(file: File) {
+    setUploading(true);
+    setError(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/admin/uploads/chat", { method: "POST", credentials: "include", body });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Upload failed");
+      setAttachment(data.url as string);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not attach that image.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function send(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const body = draft.trim();
-    if (!body || !conversationId) return;
+    /* Either half is a message on its own — a photo of the shelf answers some
+       questions better than a sentence would. */
+    if ((!body && !attachment) || !conversationId) return;
     setBusy(true);
     try {
       await adminFetch(`/api/admin/conversations/${conversationId}/messages`, {
         method: "POST",
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({ ...(body ? { body } : {}), ...(attachment ? { imageUrl: attachment } : {}) }),
       });
       setDraft("");
+      setAttachment(null);
       await load();
       onChanged();
     } catch (cause) {
@@ -303,7 +338,23 @@ function ThreadPane({
                   : "rounded-bl-sm bg-secondary text-secondary-foreground",
               )}
             >
-              <p className="whitespace-pre-wrap break-words">{message.body}</p>
+              {message.imageUrl && (
+                /* Opens full size in a tab rather than in a lightbox: the one
+                   thing an admin does with a customer's photo is look at it
+                   closely, and the browser's own viewer already does that. */
+                <a href={message.imageUrl} target="_blank" rel="noreferrer" className="block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={message.imageUrl}
+                    alt="Attachment"
+                    className={cn(
+                      "max-h-60 w-auto max-w-full rounded-xl object-contain",
+                      message.body && "mb-2",
+                    )}
+                  />
+                </a>
+              )}
+              {message.body && <p className="whitespace-pre-wrap break-words">{message.body}</p>}
               <p
                 className={cn(
                   "mt-1 text-[10px]",
@@ -317,7 +368,43 @@ function ThreadPane({
         ))}
       </div>
 
-      <form onSubmit={send} className="flex items-end gap-2 border-t border-border px-5 py-3.5">
+      <form onSubmit={send} className="border-t border-border px-5 py-3.5">
+        {attachment && (
+          <div className="mb-2.5 flex items-center gap-3 rounded-lg border border-border bg-secondary/50 p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={attachment} alt="" className="h-12 w-12 shrink-0 rounded-md object-cover" />
+            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+              Attached — sends with your next reply.
+            </span>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setAttachment(null)} aria-label="Remove attachment">
+              <X />
+            </Button>
+          </div>
+        )}
+        <div className="flex items-end gap-2">
+        <input
+          ref={filePicker}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void attach(file);
+            event.target.value = "";
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-11"
+          disabled={uploading || busy}
+          onClick={() => filePicker.current?.click()}
+          aria-label="Attach an image"
+          title="Attach an image"
+        >
+          <ImagePlus />
+        </Button>
         <textarea
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -333,9 +420,10 @@ function ThreadPane({
           aria-label="Reply"
           className="min-h-[44px] flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
         />
-        <Button type="submit" size="sm" disabled={busy || !draft.trim()}>
-          <Send /> Send
+        <Button type="submit" size="sm" className="h-11" disabled={busy || uploading || (!draft.trim() && !attachment)}>
+          <Send /> {uploading ? "Uploading…" : "Send"}
         </Button>
+        </div>
       </form>
     </div>
   );

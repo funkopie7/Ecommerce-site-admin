@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { customerFromRequest } from "@/lib/auth";
 import { error } from "@/lib/api";
-import { messageInput } from "@/lib/chat";
+import { messageContent, messageInput } from "@/lib/chat";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
      message into a CLOSED conversation — drops it out of the admin's default
      Open filter, so the customer would be talking into a thread nobody reads. */
   const message = await prisma.$transaction(async (tx) => {
-    const created = await tx.message.create({ data: { conversationId: id, sender: "CUSTOMER", body: parsed.data.body } });
+    const created = await tx.message.create({ data: { conversationId: id, sender: "CUSTOMER", ...messageContent(parsed.data) } });
     await tx.conversation.update({ where: { id }, data: { lastMessageAt: created.createdAt, status: "OPEN" } });
     return created;
   });

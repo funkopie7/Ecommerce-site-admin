@@ -1,16 +1,13 @@
 // app/api/customer/conversations/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { customerFromRequest } from "@/lib/auth";
 import { error } from "@/lib/api";
-import { fullThread, lastMessage, messageInput, productSummary, toListRows, unreadBySender } from "@/lib/chat";
+import { conversationStart, fullThread, lastMessage, messageContent, productSummary, toListRows, unreadBySender } from "@/lib/chat";
 import { prisma } from "@/lib/prisma";
 
 /* Support chat, customer half. Ownership is always resolved from the session
    (as in the wishlist and cart routes) rather than trusted from the body, so a
    customer can only ever read or write their own threads. */
-
-const start = messageInput.extend({ productId: z.string().optional() });
 
 export async function GET(request: NextRequest) {
   const session = await customerFromRequest(request);
@@ -22,9 +19,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await customerFromRequest(request);
   if (!session) return error("Sign in required", 401);
-  const parsed = start.safeParse(await request.json());
+  const parsed = conversationStart.safeParse(await request.json());
   if (!parsed.success) return error(parsed.error.issues[0].message, 400);
-  const { productId, body } = parsed.data;
+  const { productId, ...content } = parsed.data;
   /* A thread can carry product context, but only for a figure the customer can
      actually see — an invented id must not become a silent null attachment. */
   if (productId && !(await prisma.product.findFirst({ where: { id: productId, visible: true } }))) return error("Product not found", 404);
@@ -32,7 +29,7 @@ export async function POST(request: NextRequest) {
      an empty row in the admin inbox nobody can act on. */
   const conversation = await prisma.$transaction(async (tx) => {
     const created = await tx.conversation.create({ data: { customerId: session.customerId, productId: productId ?? null } });
-    const message = await tx.message.create({ data: { conversationId: created.id, sender: "CUSTOMER", body } });
+    const message = await tx.message.create({ data: { conversationId: created.id, sender: "CUSTOMER", ...messageContent(content) } });
     return tx.conversation.update({ where: { id: created.id }, data: { lastMessageAt: message.createdAt }, include: { product: productSummary, messages: fullThread } });
   });
   return NextResponse.json(conversation, { status: 201 });

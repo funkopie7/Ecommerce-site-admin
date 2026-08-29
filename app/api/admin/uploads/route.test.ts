@@ -1,7 +1,11 @@
 // app/api/admin/uploads/route.test.ts
 import { expect, it, vi } from "vitest";
+/* sharp and the Storage PUT are the two things that must not really run; the
+   validation in lib/imageUploads is deliberately left real so these tests
+   still cover it. */
 vi.mock("sharp", () => ({ default: () => ({ webp: () => ({ toBuffer: async () => Buffer.from("fake-webp-bytes") }) }) }));
-vi.mock("@/lib/uploads", () => ({ uploadProductImage: vi.fn().mockResolvedValue("https://example.supabase.co/storage/v1/object/public/product-images/fake.webp") }));
+const { uploadImage } = vi.hoisted(() => ({ uploadImage: vi.fn(async (_b: Buffer, name: string, _t: string, bucket: string) => `https://example.supabase.co/storage/v1/object/public/${bucket}/${name}`) }));
+vi.mock("@/lib/uploads", () => ({ uploadImage, PRODUCT_BUCKET: "product-images", CHAT_BUCKET: "chat-images" }));
 import { NextRequest } from "next/server";
 import { POST } from "./route";
 
@@ -18,6 +22,13 @@ it("converts an uploaded image and returns its Storage URL", async () => {
   expect(response.status).toBe(201);
   const body = await response.json();
   expect(body.url).toContain(".webp");
+});
+
+it("puts a product photo in the catalogue bucket, not the chat one", async () => {
+  process.env.ADMIN_API_KEY = "test-key";
+  uploadImage.mockClear();
+  await POST(postWith(new File([Buffer.from("x")], "photo.png", { type: "image/png" })));
+  expect(uploadImage).toHaveBeenCalledWith(expect.anything(), expect.stringContaining(".webp"), "image/webp", "product-images");
 });
 
 it("rejects a file type the pipeline doesn't accept", async () => {

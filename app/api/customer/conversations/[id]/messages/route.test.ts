@@ -19,8 +19,32 @@ beforeEach(() => { customerFromRequest.mockResolvedValue({ customerId: "cust1", 
 
 it("appends a customer reply and revives a closed thread", async () => {
   expect((await post({ body: "any update?" })).status).toBe(201);
-  expect(db.message.create).toHaveBeenCalledWith({ data: { conversationId: "c1", sender: "CUSTOMER", body: "any update?" } });
+  expect(db.message.create).toHaveBeenCalledWith({ data: { conversationId: "c1", sender: "CUSTOMER", body: "any update?", imageUrl: null } });
   expect(db.conversation.update).toHaveBeenCalledWith({ where: { id: "c1" }, data: { lastMessageAt: new Date("2026-08-29T10:00:00Z"), status: "OPEN" } });
+});
+
+const photo = "https://example.supabase.co/storage/v1/object/public/chat-images/a.webp";
+
+/* "This is how it arrived" is a photo with nothing to add in words, so an
+   image alone has to be a whole message rather than needing filler text. */
+it("accepts a photo with no words at all", async () => {
+  expect((await post({ imageUrl: photo })).status).toBe(201);
+  expect(db.message.create).toHaveBeenCalledWith({ data: { conversationId: "c1", sender: "CUSTOMER", body: "", imageUrl: photo } });
+});
+
+it("keeps the caption when a photo comes with one", async () => {
+  expect((await post({ body: "the box was crushed", imageUrl: photo })).status).toBe(201);
+  expect(db.message.create).toHaveBeenCalledWith({ data: { conversationId: "c1", sender: "CUSTOMER", body: "the box was crushed", imageUrl: photo } });
+});
+
+it("rejects a message that is neither text nor image", async () => {
+  db.message.create.mockClear();
+  expect((await post({})).status).toBe(400);
+  expect(db.message.create).not.toHaveBeenCalled();
+});
+
+it("rejects an imageUrl that is not a URL", async () => {
+  expect((await post({ imageUrl: "javascript:alert(1)" })).status).toBe(400);
 });
 
 it("reads someone else's thread as missing rather than forbidden", async () => {

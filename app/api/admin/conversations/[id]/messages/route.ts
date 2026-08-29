@@ -1,7 +1,7 @@
 // app/api/admin/conversations/[id]/messages/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { error, requireAdmin } from "@/lib/api";
-import { messageInput } from "@/lib/chat";
+import { messageContent, messageInput } from "@/lib/chat";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   /* An admin reply leaves the status alone: closing is a deliberate act on the
      PATCH route, not a side effect of answering. */
   const message = await prisma.$transaction(async (tx) => {
-    const created = await tx.message.create({ data: { conversationId: id, sender: "ADMIN", body: parsed.data.body } });
+    const created = await tx.message.create({ data: { conversationId: id, sender: "ADMIN", ...messageContent(parsed.data) } });
     await tx.conversation.update({ where: { id }, data: { lastMessageAt: created.createdAt } });
     return created;
   });
