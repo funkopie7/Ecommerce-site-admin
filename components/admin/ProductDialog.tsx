@@ -102,6 +102,7 @@ export function ProductDialog({
   const [draft, setDraft] = React.useState<Draft>(() => draftFrom(product, categories));
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
   const tags = useAdminResource<Tag[]>("/api/admin/tags");
   const tagRows = tags.data ?? [];
 
@@ -114,6 +115,27 @@ export function ProductDialog({
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
+
+  // Whatever comes off disk (PNG, JPEG, whatever a phone exports) goes
+  // through /api/admin/uploads, which re-encodes it to .webp and puts it in
+  // the same Supabase Storage bucket the seeded catalogue photos live in —
+  // no separate "paste a URL" step needed for a new figure's photo.
+  async function uploadImage(file: File) {
+    setUploading(true);
+    setError(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/admin/uploads", { method: "POST", credentials: "include", body });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Upload failed");
+      set("imageUrl", data.url as string);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -280,20 +302,39 @@ export function ProductDialog({
           </div>
 
           <Field
-            label="Image URL"
-            htmlFor="product-image"
+            label="Image"
+            htmlFor="product-image-upload"
             hint={
-              product
-                ? "Optional — must be a full URL. Leave blank to keep the current image; this form can't clear it."
-                : "Optional — must be a full URL."
+              uploading
+                ? "Uploading and converting to .webp…"
+                : product
+                  ? "Upload a PNG/JPEG (converted to .webp automatically) or paste a URL. Leave blank to keep the current image."
+                  : "Upload a PNG/JPEG (converted to .webp automatically) or paste a URL."
             }
           >
+            <div className="flex items-center gap-3">
+              {draft.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={draft.imageUrl} alt="" className="h-12 w-12 rounded-md border object-cover" />
+              ) : null}
+              <Input
+                id="product-image-upload"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                disabled={uploading}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadImage(file);
+                  event.target.value = "";
+                }}
+              />
+            </div>
             <Input
-              id="product-image"
+              className="mt-2"
               type="url"
               value={draft.imageUrl}
               onChange={(event) => set("imageUrl", event.target.value)}
-              placeholder="https://…"
+              placeholder="or paste an image URL directly…"
             />
           </Field>
 
