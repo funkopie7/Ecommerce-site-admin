@@ -459,7 +459,23 @@ const COLLECTIONS: CollectionSeed[] = [
   },
 ];
 
+/* The four badge codes the storefront shipped hardcoded. Seeding them with the
+   exact labels and tones the old FigureBadge PRESET map used keeps every
+   existing product looking identical once the storefront reads tags from the
+   database instead. Rotation is not here on purpose: it is a per-sticker
+   styling choice the storefront makes, not a property of the tag. */
+const TAGS = [
+  { code: "NEW", label: "just landed", tone: "yellow" },
+  { code: "LIMITED", label: "limited run", tone: "orange" },
+  { code: "PRE_ORDER", label: "pre-order", tone: "blue" },
+  { code: "FAN_FAVORITE", label: "fan favourite", tone: "peach" },
+];
+
 async function main() {
+  for (const tag of TAGS) {
+    await prisma.tag.upsert({ where: { code: tag.code }, update: tag, create: tag });
+  }
+
   const categoryIds = new Map<CategoryKey, string>();
   for (const category of CATEGORIES) {
     const data = { name: category.name, slug: category.slug, description: category.description };

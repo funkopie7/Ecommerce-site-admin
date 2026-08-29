@@ -5,6 +5,7 @@ import {
   Package,
   Settings,
   ShoppingBag,
+  Tags,
   Truck,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +32,7 @@ export const navGroups: NavGroup[] = [
       { title: "Products", url: "/products", icon: Package },
       { title: "Categories", url: "/categories", icon: Layers },
       { title: "Collections", url: "/collections", icon: Boxes },
+      { title: "Tags", url: "/tags", icon: Tags },
     ],
   },
   {

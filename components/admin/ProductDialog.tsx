@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Category, Product } from "@/components/admin/types";
+import type { Category, Product, Tag } from "@/components/admin/types";
+import { useAdminResource } from "@/components/admin/useAdminResource";
 
 const slugify = (value: string) =>
   value
@@ -40,6 +41,7 @@ type Draft = {
   categoryId: string;
   imageUrl: string;
   visible: boolean;
+  badges: string[];
 };
 
 function draftFrom(product: Product | null, categories: Category[]): Draft {
@@ -57,6 +59,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       // New figures start hidden-safe (see the dialog copy below) — check the
       // box to launch immediately.
       visible: false,
+      badges: [],
     };
   }
   return {
@@ -70,14 +73,18 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
     categoryId: product.categoryId,
     imageUrl: product.imageUrl ?? "",
     visible: product.visible,
+    badges: product.badges ?? [],
   };
 }
 
 /**
  * Create/edit form for a product. The field set is exactly what
  * POST/PATCH /api/admin/products accept — see the note rendered in the footer
- * about the catalog-only fields (franchise, character, edition, release date,
- * badges) that the schema stores but those routes do not yet take.
+ * about the catalog-only fields (franchise, character, edition, release date)
+ * that the schema stores but those routes do not yet take.
+ *
+ * Badges are the exception: they are picked here from the real Tag list, so
+ * whatever an admin creates on /tags is immediately assignable to a figure.
  */
 export function ProductDialog({
   open,
@@ -95,6 +102,8 @@ export function ProductDialog({
   const [draft, setDraft] = React.useState<Draft>(() => draftFrom(product, categories));
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const tags = useAdminResource<Tag[]>("/api/admin/tags");
+  const tagRows = tags.data ?? [];
 
   React.useEffect(() => {
     if (open) {
@@ -122,6 +131,7 @@ export function ProductDialog({
       stockQuantity: Number(draft.stockQuantity || 0),
       categoryId: draft.categoryId,
       visible: draft.visible,
+      badges: draft.badges,
     };
     // The route validates imageUrl as a URL, so only send it when it is one.
     if (draft.imageUrl.trim()) payload.imageUrl = draft.imageUrl.trim();
@@ -287,6 +297,60 @@ export function ProductDialog({
             />
           </Field>
 
+          {/* The stickers this figure wears on the storefront. The list is the
+              real Tag table, not a fixed set — anything created on /tags shows
+              up here. A code already on the product that no longer has a tag
+              row is still offered, so editing a figure never silently drops
+              a badge it was carrying. */}
+          <div className="grid gap-1.5">
+            <Label>Badges</Label>
+            {tags.error ? (
+              <p className="text-xs text-destructive">Could not load tags ({tags.error}).</p>
+            ) : tags.loading ? (
+              <p className="text-xs text-muted-foreground">Loading tags…</p>
+            ) : tagRows.length === 0 && draft.badges.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No tags exist yet. Create them on the Tags page and they'll be selectable here.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ...tagRows,
+                  ...draft.badges
+                    .filter((code) => !tagRows.some((tag) => tag.code === code))
+                    .map((code) => ({ id: code, code, label: `${code} (deleted tag)`, tone: "" })),
+                ].map((tag) => {
+                  const checked = draft.badges.includes(tag.code);
+                  return (
+                    <label
+                      key={tag.id}
+                      className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                        checked
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-input text-muted-foreground hover:bg-accent"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) =>
+                          set(
+                            "badges",
+                            event.target.checked
+                              ? [...draft.badges, tag.code]
+                              : draft.badges.filter((code) => code !== tag.code),
+                          )
+                        }
+                        className="size-3.5 accent-[hsl(var(--primary))]"
+                      />
+                      {tag.label}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -304,9 +368,9 @@ export function ProductDialog({
           )}
 
           <p className="text-xs text-muted-foreground">
-            Franchise, character, edition, release date and badges are stored on the product record
-            but are not accepted by the admin create/update API yet, so they are shown read-only in
-            the table.
+            Franchise, character, edition and release date are stored on the product record but are
+            not accepted by the admin create/update API yet, so they are shown read-only in the
+            table.
           </p>
 
           <DialogFooter>
