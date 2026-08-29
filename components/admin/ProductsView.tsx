@@ -1,0 +1,200 @@
+"use client";
+
+import * as React from "react";
+import { ImageOff, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+
+import { adminFetch } from "@/lib/adminApi";
+import { formatMoney } from "@/lib/money";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DataTable, type Column } from "@/components/admin/DataTable";
+import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
+import { ProductDialog } from "@/components/admin/ProductDialog";
+import { LOW_STOCK_THRESHOLD, type Category, type Product } from "@/components/admin/types";
+import { useAdminResource } from "@/components/admin/useAdminResource";
+
+export function ProductsView() {
+  const products = useAdminResource<Product[]>("/api/admin/products");
+  const categories = useAdminResource<Category[]>("/api/admin/categories");
+  const [editing, setEditing] = React.useState<Product | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [notice, setNotice] = React.useState("");
+
+  const rows = products.data ?? [];
+
+  function openCreate() {
+    setEditing(null);
+    setDialogOpen(true);
+  }
+
+  function openEdit(product: Product) {
+    setEditing(product);
+    setDialogOpen(true);
+  }
+
+  async function remove(product: Product) {
+    if (!window.confirm(`Delete “${product.name}”? This cannot be undone.`)) return;
+    try {
+      await adminFetch(`/api/admin/products/${product.id}`, { method: "DELETE" });
+      setNotice(`${product.name} was deleted.`);
+      await products.reload();
+    } catch (cause) {
+      setNotice(cause instanceof Error ? cause.message : "Could not delete that product.");
+    }
+  }
+
+  const columns: Column<Product>[] = [
+    {
+      key: "product",
+      header: "Product",
+      sortValue: (row) => row.name,
+      cell: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
+            {row.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- product images are arbitrary remote URLs; next/image would need a host allowlist we don't control.
+              <img src={row.imageUrl} alt="" className="size-full object-cover" />
+            ) : (
+              <ImageOff className="size-4 text-muted-foreground" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-medium text-foreground">{row.name}</p>
+            <p className="truncate font-mono text-xs text-muted-foreground">{row.sku}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "character",
+      header: "Character",
+      sortValue: (row) => row.character ?? "",
+      cell: (row) => (
+        <span className="text-sm text-muted-foreground">{row.character || "—"}</span>
+      ),
+    },
+    {
+      key: "franchise",
+      header: "Franchise",
+      sortValue: (row) => row.franchise ?? "",
+      cell: (row) => (
+        <span className="text-sm text-muted-foreground">{row.franchise || "—"}</span>
+      ),
+    },
+    {
+      key: "category",
+      header: "Category",
+      sortValue: (row) => row.category.name,
+      cell: (row) => <span className="text-sm">{row.category.name}</span>,
+    },
+    {
+      key: "price",
+      header: "Price",
+      sortValue: (row) => row.price,
+      headClassName: "text-right",
+      className: "text-right tabular-nums",
+      cell: (row) => formatMoney(row.price),
+    },
+    {
+      key: "stock",
+      header: "Stock",
+      sortValue: (row) => row.stockQuantity,
+      headClassName: "text-right",
+      className: "text-right",
+      cell: (row) => (
+        <span
+          className={
+            row.stockQuantity < LOW_STOCK_THRESHOLD
+              ? "font-medium tabular-nums text-destructive"
+              : "tabular-nums"
+          }
+        >
+          {row.stockQuantity}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortValue: (row) => (row.visible ? "visible" : "hidden"),
+      cell: (row) => (
+        <Badge variant={row.visible ? "success" : "outline"}>
+          {row.visible ? "Visible" : "Hidden"}
+        </Badge>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      headClassName: "w-10",
+      className: "w-10 text-right",
+      cell: (row) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.name}`}>
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => openEdit(row)}>
+              <Pencil /> Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onSelect={() => void remove(row)}
+            >
+              <Trash2 /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
+
+  return (
+    <div className="mx-auto w-full max-w-[1220px]">
+      <PageHeader
+        eyebrow="Catalog"
+        title="Products"
+        description={`${rows.length} figures in the catalog`}
+        action={
+          <Button onClick={openCreate} disabled={(categories.data ?? []).length === 0}>
+            <Plus /> Add product
+          </Button>
+        }
+      />
+
+      {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
+      {products.error && <ErrorState message={products.error} />}
+
+      <DataTable
+        rows={rows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        loading={products.loading}
+        searchIn={(row) =>
+          `${row.name} ${row.sku} ${row.character ?? ""} ${row.franchise ?? ""} ${row.category.name}`
+        }
+        searchPlaceholder="Search name, SKU, character…"
+        emptyMessage="No products yet. Add your first figure."
+      />
+
+      <ProductDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        product={editing}
+        categories={categories.data ?? []}
+        onSaved={async (message) => {
+          setNotice(message);
+          await products.reload();
+        }}
+      />
+    </div>
+  );
+}
