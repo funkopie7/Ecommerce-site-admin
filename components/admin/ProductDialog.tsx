@@ -54,7 +54,9 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       stockQuantity: "0",
       categoryId: categories[0]?.id ?? "",
       imageUrl: "",
-      visible: true,
+      // New figures start hidden-safe (see the dialog copy below) — check the
+      // box to launch immediately.
+      visible: false,
     };
   }
   return {
@@ -267,7 +269,15 @@ export function ProductDialog({
             </Field>
           </div>
 
-          <Field label="Image URL" htmlFor="product-image" hint="Optional — must be a full URL.">
+          <Field
+            label="Image URL"
+            htmlFor="product-image"
+            hint={
+              product
+                ? "Optional — must be a full URL. Leave blank to keep the current image; this form can't clear it."
+                : "Optional — must be a full URL."
+            }
+          >
             <Input
               id="product-image"
               type="url"

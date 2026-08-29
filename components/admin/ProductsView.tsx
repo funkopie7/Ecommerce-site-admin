@@ -166,7 +166,17 @@ export function ProductsView() {
           products.error ? "Catalog unavailable" : `${rows.length} figures in the catalog`
         }
         action={
-          <Button onClick={openCreate} disabled={(categories.data ?? []).length === 0}>
+          <Button
+            onClick={openCreate}
+            disabled={(categories.data ?? []).length === 0}
+            title={
+              categories.error
+                ? `Categories failed to load (${categories.error}), so a product can't be assigned one yet.`
+                : (categories.data ?? []).length === 0
+                  ? "Add a category first."
+                  : undefined
+            }
+          >
             <Plus /> Add product
           </Button>
         }
@@ -175,6 +185,11 @@ export function ProductsView() {
       {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
       {products.error && (
         <ErrorState message={`Could not load the product catalog (${products.error}).`} />
+      )}
+      {!products.error && categories.error && (
+        <ErrorState
+          message={`Categories could not be loaded (${categories.error}). "Add product" is disabled until they do.`}
+        />
       )}
 
       {/* An empty table under a failed fetch reads as "no rows exist", so the

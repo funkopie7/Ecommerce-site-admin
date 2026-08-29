@@ -19,18 +19,23 @@ export default function AdminLogin() {
     setErr("");
     setBusy(true);
     const key = String(new FormData(event.currentTarget).get("key") || "");
-    const response = await fetch("/api/auth/admin-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key }),
-    });
-    if (!response.ok) {
-      setErr((await response.json().catch(() => ({}))).error || "Incorrect admin key");
+    try {
+      const response = await fetch("/api/auth/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      });
+      if (!response.ok) {
+        setErr((await response.json().catch(() => ({}))).error || "Incorrect admin key");
+        return;
+      }
+      router.push("/");
+      router.refresh();
+    } catch {
+      setErr("Could not reach the server — check your connection and try again.");
+    } finally {
       setBusy(false);
-      return;
     }
-    router.push("/");
-    router.refresh();
   }
 
   return (

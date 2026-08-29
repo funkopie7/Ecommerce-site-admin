@@ -150,6 +150,13 @@ export function CollectionsView() {
               setOpen(true);
             }}
             disabled={(products.data ?? []).length === 0}
+            title={
+              products.error
+                ? `Products failed to load (${products.error}), so a collection can't be built yet.`
+                : (products.data ?? []).length === 0
+                  ? "Add a product first."
+                  : undefined
+            }
           >
             <Plus /> Add collection
           </Button>
@@ -159,6 +166,11 @@ export function CollectionsView() {
       {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
       {collections.error && (
         <ErrorState message={`Could not load collections (${collections.error}).`} />
+      )}
+      {!collections.error && products.error && (
+        <ErrorState
+          message={`Products could not be loaded (${products.error}). "Add collection" is disabled until they do.`}
+        />
       )}
 
       {/* An empty table under a failed fetch reads as "no rows exist", so the
@@ -341,6 +353,11 @@ function CollectionDialog({
                 onChange={(event) => setCompareAtPrice(event.target.value)}
                 placeholder="Optional"
               />
+              {collection && (
+                <p className="text-xs text-muted-foreground">
+                  Leave blank to keep the current compare-at price; this form can't clear it.
+                </p>
+              )}
             </div>
           </div>
 

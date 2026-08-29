@@ -104,13 +104,21 @@ export function DashboardView() {
 
   return (
     <div className="mx-auto w-full max-w-[1220px]">
-      <PageHeader
-        eyebrow="Overview"
-        title="Dashboard"
-        description={
-          greeting ? `${greeting}. Your shelf is busy today.` : "Your shelf at a glance."
-        }
-      />
+      {/* The cheerful greeting is tied to the success path — showing it over
+          an outage read as if nothing were wrong, right above a message
+          saying the data couldn't load. Gate it the same way the KPI grid
+          below already is. */}
+      {error ? (
+        <PageHeader eyebrow="Overview" title="Dashboard" description="Your shelf at a glance." />
+      ) : (
+        <PageHeader
+          eyebrow="Overview"
+          title="Dashboard"
+          description={
+            greeting ? `${greeting}. Your shelf is busy today.` : "Your shelf at a glance."
+          }
+        />
+      )}
 
       {/* On failure the whole body is withheld: rendering the KPI grid against
           empty arrays would print a confident "0" for every metric, which reads

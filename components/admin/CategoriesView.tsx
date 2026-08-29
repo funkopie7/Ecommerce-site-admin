@@ -290,6 +290,11 @@ function CategoryDialog({
               onChange={(event) => setImageUrl(event.target.value)}
               placeholder="https://…"
             />
+            {category && (
+              <p className="text-xs text-muted-foreground">
+                Leave blank to keep the current image; this form can't clear it.
+              </p>
+            )}
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input
