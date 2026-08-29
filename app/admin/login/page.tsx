@@ -49,7 +49,11 @@ export default function AdminLogin() {
             </div>
           </div>
 
-          <form onSubmit={submit} className="grid gap-4">
+          {/* method="post" only matters in the sliver before hydration: without
+              it a stray Enter submits natively as a GET and writes the admin key
+              into the URL and browser history. Once hydrated, submit() runs and
+              preventDefault stops the navigation either way. */}
+          <form onSubmit={submit} method="post" className="grid gap-4">
             <div className="grid gap-1.5">
               <Label htmlFor="admin-key">Admin key</Label>
               <Input

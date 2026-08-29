@@ -147,21 +147,29 @@ export function OrdersView() {
       <PageHeader
         eyebrow="Sales"
         title="Orders"
-        description={`${rows.filter((order) => order.status !== "DELIVERED" && order.status !== "CANCELLED").length} of ${rows.length} still to fulfil`}
+        description={
+          orders.error
+            ? "Orders unavailable"
+            : `${rows.filter((order) => order.status !== "DELIVERED" && order.status !== "CANCELLED").length} of ${rows.length} still to fulfil`
+        }
       />
 
       {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
-      {orders.error && <ErrorState message={orders.error} />}
+      {orders.error && <ErrorState message={`Could not load orders (${orders.error}).`} />}
 
-      <DataTable
-        rows={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        loading={orders.loading}
-        searchIn={(row) => `${row.number} ${row.customer.name} ${row.customer.email} ${row.status}`}
-        searchPlaceholder="Search order number, customer…"
-        emptyMessage="No orders yet."
-      />
+      {/* An empty table under a failed fetch reads as "no rows exist", so the
+          table is withheld until the data actually loads. */}
+      {!orders.error && (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          loading={orders.loading}
+          searchIn={(row) => `${row.number} ${row.customer.name} ${row.customer.email} ${row.status}`}
+          searchPlaceholder="Search order number, customer…"
+          emptyMessage="No orders yet."
+        />
+      )}
 
       <ShipDialog
         order={shipping}

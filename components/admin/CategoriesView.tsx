@@ -127,7 +127,11 @@ export function CategoriesView() {
       <PageHeader
         eyebrow="Catalog"
         title="Categories"
-        description={`${rows.length} categories shape how the storefront browses`}
+        description={
+          categories.error
+            ? "Categories unavailable"
+            : `${rows.length} categories shape how the storefront browses`
+        }
         action={
           <Button
             onClick={() => {
@@ -141,17 +145,23 @@ export function CategoriesView() {
       />
 
       {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
-      {categories.error && <ErrorState message={categories.error} />}
+      {categories.error && (
+        <ErrorState message={`Could not load categories (${categories.error}).`} />
+      )}
 
-      <DataTable
-        rows={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        loading={categories.loading}
-        searchIn={(row) => `${row.name} ${row.slug}`}
-        searchPlaceholder="Search categories"
-        emptyMessage="No categories yet."
-      />
+      {/* An empty table under a failed fetch reads as "no rows exist", so the
+          table is withheld until the data actually loads. */}
+      {!categories.error && (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          loading={categories.loading}
+          searchIn={(row) => `${row.name} ${row.slug}`}
+          searchPlaceholder="Search categories"
+          emptyMessage="No categories yet."
+        />
+      )}
 
       <CategoryDialog
         open={open}

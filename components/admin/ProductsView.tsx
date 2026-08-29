@@ -162,7 +162,9 @@ export function ProductsView() {
       <PageHeader
         eyebrow="Catalog"
         title="Products"
-        description={`${rows.length} figures in the catalog`}
+        description={
+          products.error ? "Catalog unavailable" : `${rows.length} figures in the catalog`
+        }
         action={
           <Button onClick={openCreate} disabled={(categories.data ?? []).length === 0}>
             <Plus /> Add product
@@ -171,19 +173,25 @@ export function ProductsView() {
       />
 
       {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
-      {products.error && <ErrorState message={products.error} />}
+      {products.error && (
+        <ErrorState message={`Could not load the product catalog (${products.error}).`} />
+      )}
 
-      <DataTable
-        rows={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        loading={products.loading}
-        searchIn={(row) =>
-          `${row.name} ${row.sku} ${row.character ?? ""} ${row.franchise ?? ""} ${row.category.name}`
-        }
-        searchPlaceholder="Search name, SKU, character…"
-        emptyMessage="No products yet. Add your first figure."
-      />
+      {/* An empty table under a failed fetch reads as "no rows exist", so the
+          table is withheld until the data actually loads. */}
+      {!products.error && (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          loading={products.loading}
+          searchIn={(row) =>
+            `${row.name} ${row.sku} ${row.character ?? ""} ${row.franchise ?? ""} ${row.category.name}`
+          }
+          searchPlaceholder="Search name, SKU, character…"
+          emptyMessage="No products yet. Add your first figure."
+        />
+      )}
 
       <ProductDialog
         open={dialogOpen}

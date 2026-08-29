@@ -112,8 +112,45 @@ export function DashboardView() {
         }
       />
 
-      {error && <ErrorState message={error} />}
+      {/* On failure the whole body is withheld: rendering the KPI grid against
+          empty arrays would print a confident "0" for every metric, which reads
+          as real data rather than as an outage. */}
+      {error ? (
+        <ErrorState message={`The dashboard could not read the store's data (${error}).`} />
+      ) : (
+        <DashboardBody
+          loading={loading}
+          productList={productList}
+          orderList={orderList}
+          lowStock={lowStock}
+          openOrders={openOrders}
+          customersWithOrders={customersWithOrders}
+          unitsOnHand={unitsOnHand}
+        />
+      )}
+    </div>
+  );
+}
 
+function DashboardBody({
+  loading,
+  productList,
+  orderList,
+  lowStock,
+  openOrders,
+  customersWithOrders,
+  unitsOnHand,
+}: {
+  loading: boolean;
+  productList: Product[];
+  orderList: Order[];
+  lowStock: Product[];
+  openOrders: Order[];
+  customersWithOrders: number;
+  unitsOnHand: number;
+}) {
+  return (
+    <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           title="Products"
@@ -233,7 +270,7 @@ export function DashboardView() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }
 

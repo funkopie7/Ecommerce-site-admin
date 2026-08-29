@@ -132,17 +132,23 @@ export function InventoryView() {
       />
 
       {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
-      {products.error && <ErrorState message={products.error} />}
+      {products.error && (
+        <ErrorState message={`Could not load stock levels (${products.error}).`} />
+      )}
 
-      <DataTable
-        rows={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        loading={products.loading}
-        searchIn={(row) => `${row.name} ${row.sku} ${row.category.name}`}
-        searchPlaceholder="Find a product"
-        emptyMessage="No products to track yet."
-      />
+      {/* An empty table under a failed fetch reads as "no rows exist", so the
+          table is withheld until the data actually loads. */}
+      {!products.error && (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          loading={products.loading}
+          searchIn={(row) => `${row.name} ${row.sku} ${row.category.name}`}
+          searchPlaceholder="Find a product"
+          emptyMessage="No products to track yet."
+        />
+      )}
 
       <AdjustDialog
         product={adjusting}

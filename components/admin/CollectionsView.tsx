@@ -157,17 +157,23 @@ export function CollectionsView() {
       />
 
       {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
-      {collections.error && <ErrorState message={collections.error} />}
+      {collections.error && (
+        <ErrorState message={`Could not load collections (${collections.error}).`} />
+      )}
 
-      <DataTable
-        rows={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        loading={collections.loading}
-        searchIn={(row) => `${row.name} ${row.slug}`}
-        searchPlaceholder="Search collections"
-        emptyMessage="No collections yet. Bundle a few figures together."
-      />
+      {/* An empty table under a failed fetch reads as "no rows exist", so the
+          table is withheld until the data actually loads. */}
+      {!collections.error && (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          loading={collections.loading}
+          searchIn={(row) => `${row.name} ${row.slug}`}
+          searchPlaceholder="Search collections"
+          emptyMessage="No collections yet. Bundle a few figures together."
+        />
+      )}
 
       <CollectionDialog
         open={open}
