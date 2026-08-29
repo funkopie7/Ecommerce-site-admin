@@ -1,9 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ===========================================================
    Mercury Commerce — "premium card" design tokens (v2)
    Soft-shadow rounded cards, pill buttons, bold sans type.
    Supersedes v1's editorial hairline/ledger-rule system.
-   Shared token system, admin/ops half. See admin-fix.css for
-   component styles built on the same tokens. :root block is
+   Shared token system, admin/ops half. Component styling now
+   lives in Tailwind + shadcn/ui (see tailwind.config.ts, which
+   maps these tokens onto Tailwind's semantic colour slots via
+   the HSL mirror published below). The brand hex block is
    byte-identical to the storefront's app/globals.css — do not
    edit values here without updating both. (--max is the one
    admin-only rhythm token kept alongside the shared set, since
@@ -45,6 +51,52 @@
   --max: 1220px;
 
   color-scheme: light;
+
+  /* -----------------------------------------------------------
+     shadcn/ui semantic slots — an HSL-triplet mirror of the brand
+     hexes above, so Tailwind (tailwind.config.ts) can compose them
+     with opacity modifiers. Derived, not invented:
+       --background  = a lighter --cream
+       --foreground  = --ink            (#3A2E22)
+       --primary     = --orange         (#D9743A)
+       --muted-fg    = --ink-soft       (#8A7A65)
+       --border      = --line           (#E8D9C3)
+       --destructive = --danger         (#C1503A)
+     The admin deliberately runs cooler and flatter than the
+     storefront: white cards, warm-neutral chrome, brand orange
+     reserved for primary actions and the active sidebar item.
+     ----------------------------------------------------------- */
+  --background: 40 33% 98%;
+  --foreground: 30 26% 18%;
+  --card: 0 0% 100%;
+  --card-foreground: 30 26% 18%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 30 26% 18%;
+  --primary: 22 68% 54%;
+  --primary-foreground: 40 100% 99%;
+  --secondary: 36 40% 95%;
+  --secondary-foreground: 30 26% 18%;
+  --muted: 36 30% 96%;
+  --muted-foreground: 34 15% 47%;
+  --accent: 36 45% 93%;
+  --accent-foreground: 30 26% 18%;
+  --destructive: 10 54% 49%;
+  --destructive-foreground: 40 100% 99%;
+  --success: 152 38% 34%;
+  --success-foreground: 40 100% 99%;
+  --border: 36 33% 89%;
+  --input: 36 33% 86%;
+  --ring: 22 68% 54%;
+  --radius: 0.5rem;
+
+  --sidebar-background: 36 30% 96%;
+  --sidebar-foreground: 30 20% 30%;
+  --sidebar-primary: 22 68% 54%;
+  --sidebar-primary-foreground: 40 100% 99%;
+  --sidebar-accent: 22 62% 92%;
+  --sidebar-accent-foreground: 22 55% 30%;
+  --sidebar-border: 36 33% 88%;
+  --sidebar-ring: 22 68% 54%;
 }
 
 /* ---------- reset ---------- */
@@ -52,8 +104,8 @@
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
-  background: var(--cream);
-  color: var(--ink);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
   font-family: var(--font-body), sans-serif;
   font-size: 15px;
   line-height: 1.5;
@@ -72,7 +124,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -86,9 +138,11 @@ select:focus-visible,
 }
 
 /* ---------- type scale ----------
-   Inter carries the entire dashboard chrome. Fraunces is reserved
-   for the login screen's h1 only (see admin-fix.css) — the one
-   hero moment this app gets, per the v2 spec. */
+   Bricolage Grotesque (--font-display) carries headings; Plus Jakarta
+   Sans (--font-body) carries the dashboard chrome; IBM Plex Mono
+   (--font-mono) carries IDs, SKUs and figures. These element rules
+   sit at (0,0,1) specificity so any Tailwind utility class on a
+   heading still wins. */
 h1, h2, h3 {
   font-family: var(--font-display), sans-serif;
   font-weight: 700;
