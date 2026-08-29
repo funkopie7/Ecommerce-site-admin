@@ -74,6 +74,7 @@ model Collection {
   compareAtPrice Int?
   visible Boolean @default(true)
   items CollectionItem[]
+  wishlistItems WishlistItem[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -191,10 +192,13 @@ model WishlistItem {
   id String @id @default(cuid())
   wishlistId String
   wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
-  productId String
-  product Product @relation(fields: [productId], references: [id])
+  productId String?
+  product Product? @relation(fields: [productId], references: [id])
+  collectionId String?
+  collection Collection? @relation(fields: [collectionId], references: [id])
   createdAt DateTime @default(now())
   @@unique([wishlistId, productId])
+  @@unique([wishlistId, collectionId])
 }
 
 enum ConversationStatus {
