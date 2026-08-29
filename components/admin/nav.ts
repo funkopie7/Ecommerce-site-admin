@@ -2,6 +2,7 @@ import {
   Boxes,
   Layers,
   LayoutDashboard,
+  MessageCircle,
   Package,
   Settings,
   ShoppingBag,
@@ -18,7 +19,7 @@ export type NavItem = { title: string; url: Route; icon: LucideIcon };
 export type NavGroup = { label: string; items: NavItem[] };
 
 /**
- * The admin's information architecture: four groups, each collapsible in the
+ * The admin's information architecture: five groups, each collapsible in the
  * sidebar. Every URL below is a real route under app/(dashboard)/.
  */
 export const navGroups: NavGroup[] = [
@@ -41,6 +42,13 @@ export const navGroups: NavGroup[] = [
       { title: "Orders", url: "/orders", icon: Truck },
       { title: "Inventory", url: "/inventory", icon: ShoppingBag },
     ],
+  },
+  {
+    // Its own group rather than a fifth entry under Sales: answering a shopper
+    // is a different job from fulfilling an order, and it is the one screen an
+    // admin keeps open while doing something else.
+    label: "Support",
+    items: [{ title: "Messages", url: "/messages", icon: MessageCircle }],
   },
   {
     label: "Configuration",

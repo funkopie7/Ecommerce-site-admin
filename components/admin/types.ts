@@ -90,5 +90,31 @@ export type Order = {
   items: { id: string; name: string; sku: string; quantity: number; unitPrice: number }[];
 };
 
+/* ---------- support chat ---------- */
+
+export const CONVERSATION_STATUSES = ["OPEN", "CLOSED"] as const;
+export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
+export type MessageSender = "CUSTOMER" | "ADMIN";
+
+export type ChatMessage = { id: string; sender: MessageSender; body: string; createdAt: string };
+/** What /api/admin/conversations includes for product context — not a full Product. */
+export type ChatProduct = { id: string; name: string; slug: string; imageUrl: string | null };
+type ChatBase = {
+  id: string;
+  status: ConversationStatus;
+  createdAt: string;
+  lastMessageAt: string;
+  customer: { id: string; name: string; email: string };
+  product: ChatProduct | null;
+};
+
+/** Inbox row: the newest message flattened out, plus the unread-from-customer count. */
+export type ConversationRow = ChatBase & {
+  lastMessage: { body: string; sender: MessageSender; createdAt: string } | null;
+  unread: number;
+};
+/** Opened thread: the whole history, oldest first. */
+export type ConversationThread = ChatBase & { messages: ChatMessage[] };
+
 /** Threshold the previous dashboard used, kept so the numbers stay comparable. */
 export const LOW_STOCK_THRESHOLD = 10;
