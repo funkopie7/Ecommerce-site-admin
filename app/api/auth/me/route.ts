@@ -5,7 +5,7 @@ import { customerFromRequest } from "@/lib/auth";
 import { error } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
-const SELECT = { id: true, name: true, email: true, phone: true, imageUrl: true };
+const SELECT = { id: true, name: true, email: true, phone: true, imageUrl: true, createdAt: true };
 
 export async function GET(request: NextRequest) {
   const session = await customerFromRequest(request);

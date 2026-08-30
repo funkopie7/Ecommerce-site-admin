@@ -15,6 +15,30 @@ import { Label } from "@/components/ui/label";
 
 type UploadedImage = { name: string; url: string };
 
+/* fetch has no upload-progress signal — the browser hands it the whole
+   response only once the request completes — so a slow Supabase upload with
+   fetch just sits on "Uploading…" with no sense of whether it's moving.
+   XHR's upload.onprogress gives real bytes-sent/bytes-total, which is what
+   actually answers that. */
+function uploadFileWithProgress(url: string, file: File, onProgress: (percent: number) => void): Promise<{ url: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100)); };
+    xhr.onload = () => {
+      let data: { url?: string; error?: string } = {};
+      try { data = JSON.parse(xhr.responseText); } catch { /* non-JSON error page */ }
+      if (xhr.status >= 200 && xhr.status < 300 && data.url) resolve({ url: data.url });
+      else reject(new Error(data.error || "Upload failed"));
+    };
+    xhr.onerror = () => reject(new Error("Upload failed"));
+    const body = new FormData();
+    body.append("file", file);
+    xhr.send(body);
+  });
+}
+
 /**
  * The one image field used everywhere the admin sets an imageUrl — products,
  * categories, collections. Three ways to a URL, all writing to the same
@@ -36,6 +60,7 @@ export function ImageField({
   hint?: string;
 }) {
   const [uploading, setUploading] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [images, setImages] = React.useState<UploadedImage[] | null>(null);
@@ -43,14 +68,11 @@ export function ImageField({
 
   async function uploadFile(file: File) {
     setUploading(true);
+    setProgress(0);
     setError(null);
     try {
-      const body = new FormData();
-      body.append("file", file);
-      const response = await fetch("/api/admin/uploads", { method: "POST", credentials: "include", body });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Upload failed");
-      onChange(data.url as string);
+      const { url } = await uploadFileWithProgress("/api/admin/uploads", file, setProgress);
+      onChange(url);
       // A picker already open should show the new file without reopening.
       setImages(null);
     } catch (caught) {
@@ -106,12 +128,18 @@ export function ImageField({
         onChange={(event) => onChange(event.target.value)}
         placeholder="or paste an image URL directly…"
       />
-      {(() => {
-        const message = error ?? (uploading ? "Uploading and converting to .webp…" : hint);
-        return message ? (
-          <p className={`text-xs ${error ? "text-destructive" : "text-muted-foreground"}`}>{message}</p>
-        ) : null;
-      })()}
+      {uploading ? (
+        <div className="grid gap-1">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="text-xs text-muted-foreground">{progress < 100 ? `Uploading… ${progress}%` : "Converting to .webp…"}</p>
+        </div>
+      ) : error ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="max-w-2xl">
