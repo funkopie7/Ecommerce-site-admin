@@ -364,25 +364,35 @@ function CollectionDialog({
                 Add a discount
               </label>
               {hasDiscount ? (
-                <div className="grid gap-1.5">
-                  <Label htmlFor="collection-price">Discounted bundle price (₹)</Label>
-                  <Input
-                    id="collection-price"
-                    required
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={discountPrice}
-                    onChange={(event) => setDiscountPrice(event.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Compare-at price: {formatMoney(itemsTotal)} — the figures' own prices added up, set automatically.
-                  </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="collection-price">Discounted bundle price (₹)</Label>
+                    <Input
+                      id="collection-price"
+                      required
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={discountPrice}
+                      onChange={(event) => setDiscountPrice(event.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="collection-compare">Compare-at price (₹)</Label>
+                    <Input id="collection-compare" readOnly disabled value={formatMoney(itemsTotal)} />
+                    <p className="text-xs text-muted-foreground">
+                      The figures&apos; own prices added up — set automatically, not editable here.
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Bundle price: <span className="font-medium text-foreground">{formatMoney(itemsTotal)}</span> — the figures' own prices added up. Check the box above to sell it for less.
-                </p>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="collection-price">Bundle price (₹)</Label>
+                  <Input id="collection-price" readOnly disabled value={formatMoney(itemsTotal)} />
+                  <p className="text-xs text-muted-foreground">
+                    The figures&apos; own prices added up — set automatically. Check the box above to sell it for less.
+                  </p>
+                </div>
               )}
             </div>
           </div>
