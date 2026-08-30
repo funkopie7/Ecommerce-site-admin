@@ -96,7 +96,7 @@ export function ImageField({
             event.target.value = "";
           }}
         />
-        <Button type="button" variant="outline" onClick={openPicker} disabled={uploading}>
+        <Button type="button" onClick={openPicker} disabled={uploading}>
           Choose existing
         </Button>
       </div>
@@ -126,7 +126,7 @@ export function ImageField({
           ) : !images || images.length === 0 ? (
             <p className="text-sm text-muted-foreground">No images uploaded yet — upload one first.</p>
           ) : (
-            <div className="grid max-h-96 grid-cols-4 gap-3 overflow-y-auto sm:grid-cols-5">
+            <div className="grid max-h-96 grid-cols-4 gap-4 overflow-y-auto p-1 sm:grid-cols-5">
               {images.map((image) => (
                 <button
                   type="button"
@@ -135,13 +135,18 @@ export function ImageField({
                     onChange(image.url);
                     setPickerOpen(false);
                   }}
-                  aria-label={`Use this image`}
-                  className={`aspect-square overflow-hidden rounded-md border transition-colors hover:border-primary ${
+                  aria-label="Use this image"
+                  /* A fixed pixel height on every cell, not aspect-square: a
+                     bare <button>'s own UA sizing can fight CSS aspect-ratio
+                     on a grid item, which is what made these overlap instead
+                     of sitting in even rows. A fixed height sidesteps that
+                     entirely — every row is exactly this tall regardless. */
+                  className={`block h-28 w-full overflow-hidden rounded-md border transition-colors hover:border-primary ${
                     value === image.url ? "border-primary ring-2 ring-primary" : "border-input"
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image.url} alt="" className="h-full w-full object-cover" />
+                  <img src={image.url} alt="" className="block h-full w-full object-cover" />
                 </button>
               ))}
             </div>
