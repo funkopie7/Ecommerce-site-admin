@@ -217,8 +217,8 @@ function CollectionDialog({
   const [name, setName] = React.useState("");
   const [slug, setSlug] = React.useState("");
   const [description, setDescription] = React.useState("");
-  const [price, setPrice] = React.useState("");
-  const [compareAtPrice, setCompareAtPrice] = React.useState("");
+  const [discountPrice, setDiscountPrice] = React.useState("");
+  const [hasDiscount, setHasDiscount] = React.useState(false);
   const [visible, setVisible] = React.useState(true);
   /** productId -> quantity, for the products currently in the bundle. */
   const [items, setItems] = React.useState<Record<string, number>>({});
@@ -230,8 +230,12 @@ function CollectionDialog({
     setName(collection?.name ?? "");
     setSlug(collection?.slug ?? "");
     setDescription(collection?.description ?? "");
-    setPrice(collection ? (collection.price / 100).toString() : "");
-    setCompareAtPrice(collection?.compareAtPrice ? (collection.compareAtPrice / 100).toString() : "");
+    /* A compare-at price on the saved record is what "this bundle has a
+       discount" means — everything else about the discounted price lives
+       in `price` itself, which the fields below derive from `hasDiscount`
+       rather than storing separately. */
+    setHasDiscount(Boolean(collection?.compareAtPrice));
+    setDiscountPrice(collection?.compareAtPrice ? (collection.price / 100).toString() : "");
     setVisible(collection?.visible ?? true);
     setItems(
       Object.fromEntries(
@@ -242,6 +246,11 @@ function CollectionDialog({
   }, [open, collection]);
 
   const selected = Object.entries(items);
+  const productById = React.useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
+  /* The bundle's honest, unavoidable reference point: what the same figures
+     cost bought one by one. Recomputed live as the picker below changes,
+     not something the admin can type over. */
+  const itemsTotal = selected.reduce((total, [productId, quantity]) => total + (productById.get(productId)?.price ?? 0) * quantity, 0);
 
   function toggle(productId: string, checked: boolean) {
     setItems((current) => {
@@ -258,6 +267,22 @@ function CollectionDialog({
       setError("A collection needs at least one product.");
       return;
     }
+    /* With no discount, the bundle just sells at what the figures cost
+       apart — there's nothing to validate. With one, the whole point is
+       a lower number than that, so a discounted price that isn't actually
+       lower is rejected rather than saved as a silent no-op discount. */
+    let priceRupees = itemsTotal / 100;
+    if (hasDiscount) {
+      priceRupees = Number(discountPrice || 0);
+      if (!discountPrice.trim() || priceRupees <= 0) {
+        setError("Enter the discounted price.");
+        return;
+      }
+      if (Math.round(priceRupees * 100) >= itemsTotal) {
+        setError("The discounted price must be less than what the figures cost apart.");
+        return;
+      }
+    }
     setSaving(true);
     setError(null);
 
@@ -265,13 +290,11 @@ function CollectionDialog({
       name: name.trim(),
       slug: slug.trim() || slugify(name),
       description: description.trim(),
-      price: Math.round(Number(price || 0) * 100),
+      price: Math.round(priceRupees * 100),
+      compareAtPrice: hasDiscount ? itemsTotal : null,
       visible,
       items: selected.map(([productId, quantity]) => ({ productId, quantity })),
     };
-    if (compareAtPrice.trim()) {
-      payload.compareAtPrice = Math.round(Number(compareAtPrice) * 100);
-    }
 
     try {
       if (collection) {
@@ -330,32 +353,35 @@ function CollectionDialog({
                 onChange={(event) => setSlug(event.target.value)}
               />
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="collection-price">Bundle price (₹)</Label>
-              <Input
-                id="collection-price"
-                required
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(event) => setPrice(event.target.value)}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="collection-compare">Compare-at price (₹)</Label>
-              <Input
-                id="collection-compare"
-                type="number"
-                min="0"
-                step="0.01"
-                value={compareAtPrice}
-                onChange={(event) => setCompareAtPrice(event.target.value)}
-                placeholder="Optional"
-              />
-              {collection && (
-                <p className="text-xs text-muted-foreground">
-                  Leave blank to keep the current compare-at price; this form can't clear it.
+            <div className="grid gap-1.5 sm:col-span-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={hasDiscount}
+                  onChange={(event) => setHasDiscount(event.target.checked)}
+                  className="size-4 accent-[hsl(var(--primary))]"
+                />
+                Add a discount
+              </label>
+              {hasDiscount ? (
+                <div className="grid gap-1.5">
+                  <Label htmlFor="collection-price">Discounted bundle price (₹)</Label>
+                  <Input
+                    id="collection-price"
+                    required
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={discountPrice}
+                    onChange={(event) => setDiscountPrice(event.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Compare-at price: {formatMoney(itemsTotal)} — the figures' own prices added up, set automatically.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Bundle price: <span className="font-medium text-foreground">{formatMoney(itemsTotal)}</span> — the figures' own prices added up. Check the box above to sell it for less.
                 </p>
               )}
             </div>

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
-const collectionInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().optional(), imageUrl: z.string().url().optional(), price: z.number().int().nonnegative(), compareAtPrice: z.number().int().nonnegative().optional(), visible: z.boolean().default(true), items: z.array(z.object({ productId: z.string(), quantity: z.number().int().positive().default(1) })).min(1) });
+const collectionInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().optional(), imageUrl: z.string().url().optional(), price: z.number().int().nonnegative(), compareAtPrice: z.number().int().nonnegative().nullable().optional(), visible: z.boolean().default(true), items: z.array(z.object({ productId: z.string(), quantity: z.number().int().positive().default(1) })).min(1) });
 
 export async function GET(request: NextRequest) { if (!(await requireAdmin(request))) return error("Administrator access required", 401); return NextResponse.json(await prisma.collection.findMany({ include: { items: { include: { product: true } } }, orderBy: { updatedAt: "desc" } })); }
 export async function POST(request: NextRequest) {
