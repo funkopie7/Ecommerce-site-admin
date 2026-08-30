@@ -27,7 +27,13 @@ export function ProductsView() {
   const [notice, setNotice] = React.useState("");
   const [adjustingId, setAdjustingId] = React.useState<string | null>(null);
 
-  const rows = products.data ?? [];
+  // Alphabetical by name, not the API's updatedAt-desc order — otherwise a
+  // quick stock adjustment (which touches updatedAt) jumps the row to the
+  // top instead of leaving it where it was.
+  const rows = React.useMemo(
+    () => [...(products.data ?? [])].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
+    [products.data],
+  );
 
   // Same one-unit quick-adjust the Inventory page offers — kept here too so a
   // stock nudge doesn't require leaving the product list to make it.
