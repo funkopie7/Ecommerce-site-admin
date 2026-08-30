@@ -104,6 +104,9 @@ export function OrdersView() {
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-foreground">{row.customer.name}</p>
           <p className="truncate text-xs text-muted-foreground">{row.customer.email}</p>
+          {row.addressSnapshot?.phone && (
+            <p className="truncate font-mono text-xs text-muted-foreground">{row.addressSnapshot.phone}</p>
+          )}
         </div>
       ),
     },
@@ -176,8 +179,10 @@ export function OrdersView() {
           columns={columns}
           getRowId={(row) => row.id}
           loading={orders.loading}
-          searchIn={(row) => `${row.number} ${row.customer.name} ${row.customer.email} ${row.status}`}
-          searchPlaceholder="Search order number, customer…"
+          searchIn={(row) =>
+            `${row.number} ${row.customer.name} ${row.customer.email} ${row.addressSnapshot?.phone ?? ""} ${row.status} ${row.items.map((item) => item.name).join(" ")}`
+          }
+          searchPlaceholder="Search order, customer, phone, product…"
           emptyMessage="No orders yet."
         />
       )}

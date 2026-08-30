@@ -87,6 +87,8 @@ export type Order = {
   trackingCode: string | null;
   createdAt: string;
   customer: { name: string; email: string };
+  /** Captured at checkout time, so it stays correct even if the address is later edited or deleted. */
+  addressSnapshot: { phone: string; recipient: string; [key: string]: unknown };
   items: { id: string; productId: string; name: string; sku: string; quantity: number; unitPrice: number; collectionId: string | null }[];
 };
 
