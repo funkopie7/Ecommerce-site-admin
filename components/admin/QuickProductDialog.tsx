@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ImageField } from "@/components/admin/ImageField";
 import type { Category, Product } from "@/components/admin/types";
 
 const slugify = (value: string) =>
@@ -32,7 +33,7 @@ const slugify = (value: string) =>
 /**
  * The minimal version of ProductDialog's create form, for wiring a new figure
  * into a bundle without leaving the collection editor. Franchise, character,
- * edition, images and badges still need the full Products page.
+ * edition and badges still need the full Products page.
  */
 export function QuickProductDialog({
   open,
@@ -53,6 +54,7 @@ export function QuickProductDialog({
   const [price, setPrice] = React.useState("");
   const [cost, setCost] = React.useState("");
   const [stockQuantity, setStockQuantity] = React.useState("0");
+  const [imageUrl, setImageUrl] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
 
@@ -66,6 +68,7 @@ export function QuickProductDialog({
     setPrice("");
     setCost("");
     setStockQuantity("0");
+    setImageUrl("");
     setError(null);
   }, [open, categories]);
 
@@ -74,21 +77,24 @@ export function QuickProductDialog({
     setSaving(true);
     setError(null);
     try {
+      const payload: Record<string, unknown> = {
+        name: name.trim(),
+        sku: sku.trim(),
+        slug: slug.trim() || slugify(name),
+        description: description.trim(),
+        price: Math.round(Number(price || 0) * 100),
+        cost: Math.round(Number(cost || 0) * 100),
+        stockQuantity: Number(stockQuantity || 0),
+        categoryId,
+        // New figures start hidden-safe, same default the full form uses —
+        // launch it from the Products page once it's fully dressed.
+        visible: false,
+      };
+      // The route validates imageUrl as a URL, so only send it when it is one.
+      if (imageUrl.trim()) payload.imageUrl = imageUrl.trim();
       const created = await adminFetch<Product>("/api/admin/products", {
         method: "POST",
-        body: JSON.stringify({
-          name: name.trim(),
-          sku: sku.trim(),
-          slug: slug.trim() || slugify(name),
-          description: description.trim(),
-          price: Math.round(Number(price || 0) * 100),
-          cost: Math.round(Number(cost || 0) * 100),
-          stockQuantity: Number(stockQuantity || 0),
-          categoryId,
-          // New figures start hidden-safe, same default the full form uses —
-          // launch it from the Products page once it's fully dressed.
-          visible: false,
-        }),
+        body: JSON.stringify(payload),
       });
       onCreated(created);
       onOpenChange(false);
@@ -105,8 +111,8 @@ export function QuickProductDialog({
         <DialogHeader>
           <DialogTitle>Quick add product</DialogTitle>
           <DialogDescription>
-            Creates the figure hidden-safe and adds it to this bundle. Add its image, franchise and
-            badges on the Products page.
+            Creates the figure hidden-safe and adds it to this bundle. Add its franchise and badges
+            on the Products page.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
@@ -216,6 +222,8 @@ export function QuickProductDialog({
               />
             </div>
           </div>
+
+          <ImageField id="quick-product-image" label="Image" value={imageUrl} onChange={setImageUrl} />
 
           {error && (
             <p role="alert" className="text-sm text-destructive">
