@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Plus } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageField } from "@/components/admin/ImageField";
-import type { Category, Product } from "@/components/admin/types";
+import { QuickCategoryDialog } from "@/components/admin/QuickCategoryDialog";
+import { QuickTagDialog } from "@/components/admin/QuickTagDialog";
+import type { Category, Product, Tag } from "@/components/admin/types";
+import { useAdminResource } from "@/components/admin/useAdminResource";
 
 const slugify = (value: string) =>
   value
@@ -30,20 +34,19 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-/**
- * The minimal version of ProductDialog's create form, for wiring a new figure
- * into a bundle without leaving the collection editor. Franchise, character,
- * edition and badges still need the full Products page.
- */
+/** Every field ProductDialog has, embedded so a bundle's new figure never needs a follow-up trip to the Products page. */
 export function QuickProductDialog({
   open,
   onOpenChange,
   categories,
+  onCategoryCreated,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: Category[];
+  /** Fired after a quick-created category — reload the shared list; the dialog already selects it locally. */
+  onCategoryCreated?: () => void;
   onCreated: (product: Product) => void;
 }) {
   const [name, setName] = React.useState("");
@@ -55,9 +58,27 @@ export function QuickProductDialog({
   const [cost, setCost] = React.useState("");
   const [stockQuantity, setStockQuantity] = React.useState("0");
   const [imageUrl, setImageUrl] = React.useState("");
+  const [badges, setBadges] = React.useState<string[]>([]);
+  // New figures start hidden-safe, same default the full form uses.
+  const [visible, setVisible] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [quickCategoryOpen, setQuickCategoryOpen] = React.useState(false);
+  const [quickTagOpen, setQuickTagOpen] = React.useState(false);
+  const tags = useAdminResource<Tag[]>("/api/admin/tags");
+  const tagRows = tags.data ?? [];
+  // Holds a category created mid-dialog until the parent's reload lands it in
+  // `categories` for real — otherwise the Select would show a blank value.
+  const [extraCategories, setExtraCategories] = React.useState<Category[]>([]);
+  const categoryOptions = React.useMemo(
+    () => [...categories, ...extraCategories.filter((extra) => !categories.some((category) => category.id === extra.id))],
+    [categories, extraCategories],
+  );
 
+  // `categories` deliberately isn't a dependency: quick-adding a category
+  // reloads the shared list while this dialog stays open, and re-running
+  // this reset on that reload would wipe out the categoryId it just set.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (!open) return;
     setName("");
@@ -69,8 +90,11 @@ export function QuickProductDialog({
     setCost("");
     setStockQuantity("0");
     setImageUrl("");
+    setBadges([]);
+    setVisible(false);
+    setExtraCategories([]);
     setError(null);
-  }, [open, categories]);
+  }, [open]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,9 +110,8 @@ export function QuickProductDialog({
         cost: Math.round(Number(cost || 0) * 100),
         stockQuantity: Number(stockQuantity || 0),
         categoryId,
-        // New figures start hidden-safe, same default the full form uses —
-        // launch it from the Products page once it's fully dressed.
-        visible: false,
+        visible,
+        badges,
       };
       // The route validates imageUrl as a URL, so only send it when it is one.
       if (imageUrl.trim()) payload.imageUrl = imageUrl.trim();
@@ -107,12 +130,11 @@ export function QuickProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Quick add product</DialogTitle>
           <DialogDescription>
-            Creates the figure hidden-safe and adds it to this bundle. Add its franchise and badges
-            on the Products page.
+            Every field the Products page has, without leaving this collection.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
@@ -134,18 +156,34 @@ export function QuickProductDialog({
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="quick-product-category">Category</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger id="quick-product-category">
-                  <SelectValue placeholder="Choose a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-1.5">
+                {/* Radix Select's items only mount once the popup has opened, so a
+                    value set programmatically (quick-created category) briefly
+                    finds no matching item and self-corrects with an empty
+                    onValueChange — guarded against here. */}
+                <Select value={categoryId} onValueChange={(value) => value && setCategoryId(value)}>
+                  <SelectTrigger id="quick-product-category">
+                    <SelectValue placeholder="Choose a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Quick add category"
+                  title="Quick add category"
+                  onClick={() => setQuickCategoryOpen(true)}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="quick-product-sku">SKU</Label>
@@ -225,6 +263,62 @@ export function QuickProductDialog({
 
           <ImageField id="quick-product-image" label="Image" value={imageUrl} onChange={setImageUrl} />
 
+          <div className="grid gap-1.5">
+            <div className="flex items-center justify-between">
+              <Label>Badges</Label>
+              <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setQuickTagOpen(true)}>
+                <Plus className="size-3.5" /> New badge
+              </Button>
+            </div>
+            {tags.error ? (
+              <p className="text-xs text-destructive">Could not load tags ({tags.error}).</p>
+            ) : tags.loading ? (
+              <p className="text-xs text-muted-foreground">Loading tags…</p>
+            ) : tagRows.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No tags exist yet — use &quot;New badge&quot; above or create them on the Tags page.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {tagRows.map((tag) => {
+                  const checked = badges.includes(tag.code);
+                  return (
+                    <label
+                      key={tag.id}
+                      className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                        checked
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-input text-muted-foreground hover:bg-accent"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) =>
+                          setBadges((current) =>
+                            event.target.checked ? [...current, tag.code] : current.filter((code) => code !== tag.code),
+                          )
+                        }
+                        className="size-3.5 accent-[hsl(var(--primary))]"
+                      />
+                      {tag.label}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={visible}
+              onChange={(event) => setVisible(event.target.checked)}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Visible on the storefront
+          </label>
+
           {error && (
             <p role="alert" className="text-sm text-destructive">
               {error}
@@ -240,6 +334,24 @@ export function QuickProductDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <QuickCategoryDialog
+        open={quickCategoryOpen}
+        onOpenChange={setQuickCategoryOpen}
+        onCreated={(category) => {
+          setExtraCategories((current) => [...current, category]);
+          setCategoryId(category.id);
+          onCategoryCreated?.();
+        }}
+      />
+      <QuickTagDialog
+        open={quickTagOpen}
+        onOpenChange={setQuickTagOpen}
+        onCreated={async (tag) => {
+          await tags.reload();
+          setBadges((current) => [...current, tag.code]);
+        }}
+      />
     </Dialog>
   );
 }

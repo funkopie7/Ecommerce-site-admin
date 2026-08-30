@@ -197,6 +197,7 @@ export function CollectionsView() {
         products={products.data ?? []}
         categories={categories.data ?? []}
         onProductCreated={() => void products.reload()}
+        onCategoryCreated={() => void categories.reload()}
         onSaved={async (message) => {
           setNotice(message);
           await collections.reload();
@@ -213,6 +214,7 @@ function CollectionDialog({
   products,
   categories,
   onProductCreated,
+  onCategoryCreated,
   onSaved,
 }: {
   open: boolean;
@@ -222,6 +224,8 @@ function CollectionDialog({
   categories: Category[];
   /** Fired after a quick-created product — reload the shared list; the dialog already checks it locally. */
   onProductCreated?: () => void;
+  /** Fired after the quick-add-product dialog quick-creates a category — reload the shared list. */
+  onCategoryCreated?: () => void;
   onSaved: (message: string) => void;
 }) {
   const [name, setName] = React.useState("");
@@ -526,6 +530,7 @@ function CollectionDialog({
         open={quickProductOpen}
         onOpenChange={setQuickProductOpen}
         categories={categories}
+        onCategoryCreated={onCategoryCreated}
         onCreated={(product) => {
           setExtraProducts((current) => [...current, product]);
           toggle(product.id, true);

@@ -23,11 +23,7 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-/**
- * The minimal version of CategoriesView's create form — just enough to wire
- * up a product without leaving its dialog. Description and visibility still
- * need the full Categories page.
- */
+/** Same fields as CategoriesView's create form, embedded so nothing needs a follow-up trip to the Categories page. */
 export function QuickCategoryDialog({
   open,
   onOpenChange,
@@ -39,7 +35,9 @@ export function QuickCategoryDialog({
 }) {
   const [name, setName] = React.useState("");
   const [slug, setSlug] = React.useState("");
+  const [description, setDescription] = React.useState("");
   const [imageUrl, setImageUrl] = React.useState("");
+  const [visible, setVisible] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
 
@@ -47,7 +45,9 @@ export function QuickCategoryDialog({
     if (!open) return;
     setName("");
     setSlug("");
+    setDescription("");
     setImageUrl("");
+    setVisible(true);
     setError(null);
   }, [open]);
 
@@ -56,7 +56,7 @@ export function QuickCategoryDialog({
     setSaving(true);
     setError(null);
     try {
-      const payload: Record<string, unknown> = { name: name.trim(), slug: slug.trim() || slugify(name), visible: true };
+      const payload: Record<string, unknown> = { name: name.trim(), slug: slug.trim() || slugify(name), description: description.trim(), visible };
       if (imageUrl.trim()) payload.imageUrl = imageUrl.trim();
       const created = await adminFetch<Category>("/api/admin/categories", {
         method: "POST",
@@ -76,9 +76,7 @@ export function QuickCategoryDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Quick add category</DialogTitle>
-          <DialogDescription>
-            Creates a visible category. Add a description on the Categories page later.
-          </DialogDescription>
+          <DialogDescription>Every field the Categories page has, without leaving this dialog.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-1.5">
@@ -106,7 +104,24 @@ export function QuickCategoryDialog({
               onChange={(event) => setSlug(event.target.value)}
             />
           </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="quick-category-description">Description</Label>
+            <Input
+              id="quick-category-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
           <ImageField id="quick-category-image" label="Image" value={imageUrl} onChange={setImageUrl} />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={visible}
+              onChange={(event) => setVisible(event.target.checked)}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Visible on the storefront
+          </label>
           {error && (
             <p role="alert" className="text-sm text-destructive">
               {error}
