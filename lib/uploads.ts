@@ -25,3 +25,21 @@ export async function uploadImage(buffer: Buffer, filename: string, contentType:
 }
 
 export const uploadProductImage = (buffer: Buffer, filename: string, contentType: string) => uploadImage(buffer, filename, contentType, PRODUCT_BUCKET);
+
+/* Backs the "choose an image already uploaded" picker — every product,
+   category and collection image field reads from the same product-images
+   bucket, so anything uploaded from any one of them shows up for the
+   others too. Newest first: that's almost always the one just uploaded. */
+export async function listImages(bucket: string): Promise<{ name: string; url: string }[]> {
+  const base = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !key) throw new Error("Image storage isn't configured (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing)");
+  const response = await fetch(`${base}/storage/v1/object/list/${bucket}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ prefix: "", limit: 200, sortBy: { column: "created_at", order: "desc" } }),
+  });
+  if (!response.ok) throw new Error(`Could not list images: ${(await response.text()).slice(0, 200)}`);
+  const items: { name: string }[] = await response.json();
+  return items.map((item) => ({ name: item.name, url: `${base}/storage/v1/object/public/${bucket}/${item.name}` }));
+}

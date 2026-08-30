@@ -4,10 +4,13 @@ import { expect, it, vi } from "vitest";
    validation in lib/imageUploads is deliberately left real so these tests
    still cover it. */
 vi.mock("sharp", () => ({ default: () => ({ webp: () => ({ toBuffer: async () => Buffer.from("fake-webp-bytes") }) }) }));
-const { uploadImage } = vi.hoisted(() => ({ uploadImage: vi.fn(async (_b: Buffer, name: string, _t: string, bucket: string) => `https://example.supabase.co/storage/v1/object/public/${bucket}/${name}`) }));
-vi.mock("@/lib/uploads", () => ({ uploadImage, PRODUCT_BUCKET: "product-images", CHAT_BUCKET: "chat-images" }));
+const { uploadImage, listImages } = vi.hoisted(() => ({
+  uploadImage: vi.fn(async (_b: Buffer, name: string, _t: string, bucket: string) => `https://example.supabase.co/storage/v1/object/public/${bucket}/${name}`),
+  listImages: vi.fn(async () => [{ name: "a.webp", url: "https://example.supabase.co/storage/v1/object/public/product-images/a.webp" }]),
+}));
+vi.mock("@/lib/uploads", () => ({ uploadImage, listImages, PRODUCT_BUCKET: "product-images", CHAT_BUCKET: "chat-images" }));
 import { NextRequest } from "next/server";
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 function postWith(file: File | null) {
   const form = new FormData();
@@ -48,4 +51,19 @@ it("refuses an unauthenticated upload", async () => {
   form.append("file", new File([Buffer.from("x")], "photo.png", { type: "image/png" }));
   const request = new NextRequest("http://localhost/api/admin/uploads", { method: "POST", body: form });
   expect((await POST(request)).status).toBe(401);
+});
+
+it("lists previously uploaded images for the picker", async () => {
+  process.env.ADMIN_API_KEY = "test-key";
+  const request = new NextRequest("http://localhost/api/admin/uploads", { headers: { "x-admin-key": "test-key" } });
+  const response = await GET(request);
+  expect(response.status).toBe(200);
+  const body = await response.json();
+  expect(body).toEqual([{ name: "a.webp", url: "https://example.supabase.co/storage/v1/object/public/product-images/a.webp" }]);
+});
+
+it("refuses an unauthenticated list", async () => {
+  process.env.ADMIN_API_KEY = "test-key";
+  const request = new NextRequest("http://localhost/api/admin/uploads");
+  expect((await GET(request)).status).toBe(401);
 });

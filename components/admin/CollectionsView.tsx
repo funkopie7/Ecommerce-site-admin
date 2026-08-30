@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DataTable, type Column } from "@/components/admin/DataTable";
 import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
+import { ImageField } from "@/components/admin/ImageField";
 import type { Collection, Product } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
@@ -217,6 +218,7 @@ function CollectionDialog({
   const [name, setName] = React.useState("");
   const [slug, setSlug] = React.useState("");
   const [description, setDescription] = React.useState("");
+  const [imageUrl, setImageUrl] = React.useState("");
   const [discountPrice, setDiscountPrice] = React.useState("");
   const [hasDiscount, setHasDiscount] = React.useState(false);
   const [visible, setVisible] = React.useState(true);
@@ -230,6 +232,7 @@ function CollectionDialog({
     setName(collection?.name ?? "");
     setSlug(collection?.slug ?? "");
     setDescription(collection?.description ?? "");
+    setImageUrl(collection?.imageUrl ?? "");
     /* A compare-at price on the saved record is what "this bundle has a
        discount" means — everything else about the discounted price lives
        in `price` itself, which the fields below derive from `hasDiscount`
@@ -295,6 +298,8 @@ function CollectionDialog({
       visible,
       items: selected.map(([productId, quantity]) => ({ productId, quantity })),
     };
+    // The route validates imageUrl as a URL, so only send it when it is one.
+    if (imageUrl.trim()) payload.imageUrl = imageUrl.trim();
 
     try {
       if (collection) {
@@ -405,6 +410,14 @@ function CollectionDialog({
               onChange={(event) => setDescription(event.target.value)}
             />
           </div>
+
+          <ImageField
+            id="collection-image"
+            label="Image"
+            value={imageUrl}
+            onChange={setImageUrl}
+            hint={collection ? "Leave blank to keep the current image. Falls back to a composite of the figures' own photos when unset." : "Optional — falls back to a composite of the figures' own photos when unset."}
+          />
 
           <div className="grid gap-1.5">
             <Label>Figures in this collection ({selected.length})</Label>

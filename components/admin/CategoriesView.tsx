@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DataTable, type Column } from "@/components/admin/DataTable";
+import { ImageField } from "@/components/admin/ImageField";
 import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
 import type { Category } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
@@ -281,21 +282,13 @@ function CategoryDialog({
               onChange={(event) => setDescription(event.target.value)}
             />
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="category-image">Image URL</Label>
-            <Input
-              id="category-image"
-              type="url"
-              value={imageUrl}
-              onChange={(event) => setImageUrl(event.target.value)}
-              placeholder="https://…"
-            />
-            {category && (
-              <p className="text-xs text-muted-foreground">
-                Leave blank to keep the current image; this form can't clear it.
-              </p>
-            )}
-          </div>
+          <ImageField
+            id="category-image"
+            label="Image"
+            value={imageUrl}
+            onChange={setImageUrl}
+            hint={category ? "Leave blank to keep the current image." : undefined}
+          />
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
