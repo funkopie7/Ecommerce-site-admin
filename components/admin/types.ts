@@ -87,7 +87,7 @@ export type Order = {
   trackingCode: string | null;
   createdAt: string;
   customer: { name: string; email: string };
-  items: { id: string; name: string; sku: string; quantity: number; unitPrice: number }[];
+  items: { id: string; productId: string; name: string; sku: string; quantity: number; unitPrice: number }[];
 };
 
 /* ---------- support chat ---------- */

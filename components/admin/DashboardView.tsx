@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState, PageHeader } from "@/components/admin/PageHeader";
+import { ProfitDashboard } from "@/components/admin/ProfitDashboard";
 import { LOW_STOCK_THRESHOLD, type Order, type Product } from "@/components/admin/types";
 import { orderStatusVariant } from "@/components/admin/orderStatus";
 
@@ -203,6 +204,8 @@ function DashboardBody({
           loading={loading}
         />
       </div>
+
+      <ProfitDashboard loading={loading} productList={productList} orderList={orderList} />
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
