@@ -142,9 +142,10 @@ export function ProductDialog({
     setError(null);
 
     const slug = draft.slug.trim() || slugify(draft.name);
+    // SKU is generated server-side (on create) and never edited here — see
+    // the note on the field below.
     const payload: Record<string, unknown> = {
       name: draft.name.trim(),
-      sku: draft.sku.trim(),
       slug,
       description: draft.description.trim(),
       price: Math.round(Number(draft.price || 0) * 100),
@@ -242,15 +243,12 @@ export function ProductDialog({
                 </Button>
               </div>
             </Field>
-            <Field label="SKU" htmlFor="product-sku">
-              <Input
-                id="product-sku"
-                required
-                minLength={2}
-                value={draft.sku}
-                onChange={(event) => set("sku", event.target.value)}
-                placeholder="FNK-0042"
-              />
+            <Field
+              label="SKU"
+              htmlFor="product-sku"
+              hint={product ? "Generated when the product was created — never changes." : "Generated from the name once you save — e.g. \"Gojo\" becomes GOJO-1."}
+            >
+              <Input id="product-sku" readOnly disabled value={product ? draft.sku : "Generated automatically"} />
             </Field>
             <Field label="Slug" htmlFor="product-slug">
               <Input

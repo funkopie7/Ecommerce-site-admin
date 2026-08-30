@@ -50,7 +50,6 @@ export function QuickProductDialog({
   onCreated: (product: Product) => void;
 }) {
   const [name, setName] = React.useState("");
-  const [sku, setSku] = React.useState("");
   const [slug, setSlug] = React.useState("");
   const [categoryId, setCategoryId] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -82,7 +81,6 @@ export function QuickProductDialog({
   React.useEffect(() => {
     if (!open) return;
     setName("");
-    setSku("");
     setSlug("");
     setCategoryId(categories[0]?.id ?? "");
     setDescription("");
@@ -103,7 +101,6 @@ export function QuickProductDialog({
     try {
       const payload: Record<string, unknown> = {
         name: name.trim(),
-        sku: sku.trim(),
         slug: slug.trim() || slugify(name),
         description: description.trim(),
         price: Math.round(Number(price || 0) * 100),
@@ -185,18 +182,7 @@ export function QuickProductDialog({
                 </Button>
               </div>
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="quick-product-sku">SKU</Label>
-              <Input
-                id="quick-product-sku"
-                required
-                minLength={2}
-                value={sku}
-                onChange={(event) => setSku(event.target.value)}
-                placeholder="FNK-0042"
-              />
-            </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5 sm:col-span-2">
               <Label htmlFor="quick-product-slug">Slug</Label>
               <Input
                 id="quick-product-slug"
