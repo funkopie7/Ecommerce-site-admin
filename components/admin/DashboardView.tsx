@@ -99,8 +99,9 @@ export function DashboardView() {
     (order) => order.status !== "DELIVERED" && order.status !== "CANCELLED",
   );
   // The API exposes customers only through the orders they placed, so this is
-  // deliberately labelled "with orders" rather than presented as a total.
-  const customersWithOrders = new Set(orderList.map((order) => order.customer.email)).size;
+  // deliberately labelled "with orders" rather than presented as a total. A
+  // manual/walk-in sale has no registered customer.email to count here.
+  const customersWithOrders = new Set(orderList.map((order) => order.customer?.email).filter((email): email is string => Boolean(email))).size;
   const unitsOnHand = productList.reduce((total, product) => total + product.stockQuantity, 0);
 
   return (
@@ -229,7 +230,7 @@ function DashboardBody({
                   <li key={order.id} className="flex items-center justify-between gap-3 py-2.5">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">
-                        {order.customer.name}
+                        {order.customer?.name ?? order.customerName ?? "—"}
                       </p>
                       <p className="truncate font-mono text-xs text-muted-foreground">
                         {order.number}

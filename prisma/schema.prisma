@@ -18,6 +18,8 @@ enum OrderStatus {
 
 enum PaymentStatus {
   PENDING
+  PARTIALLY_PAID
+  PAID
   SIMULATED_PAID
   FAILED
 }
@@ -164,20 +166,44 @@ model CartItem {
 model Order {
   id String @id @default(cuid())
   number String @unique
-  customerId String
-  customer Customer @relation(fields: [customerId], references: [id])
+  // Nullable so a walk-in sale isn't forced through a registered account —
+  // see customerName/customerPhone below, which carry the walk-in's details
+  // when customerId is null. A registered customer's order always has both
+  // customerId set and these two blank; a manual walk-in order is the
+  // reverse. Never both, never neither.
+  customerId String?
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName String?
+  customerPhone String?
   status OrderStatus @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
   subtotal Int
   shipping Int @default(0)
   total Int
-  addressSnapshot Json
+  // Cumulative payments recorded so far — kept in sync with the Payment log
+  // below inside the same transaction, so filtering/sorting by it never
+  // needs to aggregate the log at query time.
+  amountPaid Int @default(0)
+  payments Payment[]
+  // Optional: an offline sale picked up in person has nowhere to ship.
+  addressSnapshot Json?
   carrier String?
   trackingCode String?
   deliveryNotes String?
   items OrderItem[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/** One record per payment collected against an order — the paper trail behind Order.amountPaid. */
+model Payment {
+  id String @id @default(cuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount Int
+  method String?
+  note String?
+  recordedAt DateTime @default(now())
 }
 
 model OrderItem {

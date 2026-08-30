@@ -75,6 +75,8 @@ export const ORDER_STATUSES = [
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
+export type Payment = { id: string; amount: number; method: string | null; note: string | null; recordedAt: string };
+
 export type Order = {
   id: string;
   number: string;
@@ -83,12 +85,18 @@ export type Order = {
   subtotal: number;
   shipping: number;
   total: number;
+  amountPaid: number;
+  payments: Payment[];
   carrier: string | null;
   trackingCode: string | null;
   createdAt: string;
-  customer: { name: string; email: string };
-  /** Captured at checkout time, so it stays correct even if the address is later edited or deleted. */
-  addressSnapshot: { phone: string; recipient: string; [key: string]: unknown };
+  // Null for a manual/offline sale not tied to a registered account — see
+  // customerName/customerPhone, which carry the walk-in's details instead.
+  customer: { name: string; email: string } | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  /** Captured at checkout time, so it stays correct even if the address is later edited or deleted. Null for a manual sale with no delivery. */
+  addressSnapshot: { phone: string; recipient: string; [key: string]: unknown } | null;
   items: { id: string; productId: string; name: string; sku: string; quantity: number; unitPrice: number; collectionId: string | null }[];
 };
 
