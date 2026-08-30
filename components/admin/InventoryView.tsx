@@ -21,8 +21,22 @@ import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
 import { LOW_STOCK_THRESHOLD, type Product } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
+type Adjustment = {
+  id: string;
+  delta: number;
+  resultingQuantity: number;
+  reason: string;
+  adminEmail: string;
+  createdAt: string;
+  product: { id: string; name: string; sku: string };
+};
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
 export function InventoryView() {
   const products = useAdminResource<Product[]>("/api/admin/products");
+  const adjustments = useAdminResource<Adjustment[]>("/api/admin/inventory");
   const [notice, setNotice] = React.useState("");
   const [adjusting, setAdjusting] = React.useState<Product | null>(null);
   const [busyId, setBusyId] = React.useState<string | null>(null);
@@ -39,7 +53,7 @@ export function InventoryView() {
       setNotice(
         `${delta > 0 ? "Added" : "Removed"} ${Math.abs(delta)} unit${Math.abs(delta) === 1 ? "" : "s"} of ${product.name}.`,
       );
-      await products.reload();
+      await Promise.all([products.reload(), adjustments.reload()]);
     } catch (cause) {
       setNotice(cause instanceof Error ? cause.message : "Could not adjust that stock level.");
     } finally {
@@ -158,9 +172,76 @@ export function InventoryView() {
           await adjust(product, delta, reason);
         }}
       />
+
+      <div className="mt-10">
+        <PageHeader eyebrow="Audit trail" title="Recent adjustments" description="Every stock change above, logged with who and why." />
+        {adjustments.error && <ErrorState message={`Could not load the audit trail (${adjustments.error}).`} />}
+        {!adjustments.error && (
+          <DataTable
+            rows={adjustments.data ?? []}
+            columns={adjustmentColumns}
+            getRowId={(row) => row.id}
+            loading={adjustments.loading}
+            searchIn={(row) => `${row.product.name} ${row.product.sku} ${row.reason} ${row.adminEmail}`}
+            searchPlaceholder="Find an adjustment"
+            emptyMessage="No adjustments logged yet."
+          />
+        )}
+      </div>
     </div>
   );
 }
+
+const adjustmentColumns: Column<Adjustment>[] = [
+  {
+    key: "product",
+    header: "Product",
+    sortValue: (row) => row.product.name,
+    cell: (row) => (
+      <div className="min-w-0">
+        <p className="truncate font-medium text-foreground">{row.product.name}</p>
+        <p className="truncate font-mono text-xs text-muted-foreground">{row.product.sku}</p>
+      </div>
+    ),
+  },
+  {
+    key: "delta",
+    header: "Change",
+    sortValue: (row) => row.delta,
+    headClassName: "text-right",
+    className: "text-right",
+    cell: (row) => (
+      <span className={`font-semibold tabular-nums ${row.delta > 0 ? "text-emerald-600" : "text-destructive"}`}>
+        {row.delta > 0 ? `+${row.delta}` : row.delta}
+      </span>
+    ),
+  },
+  {
+    key: "resulting",
+    header: "Resulting stock",
+    sortValue: (row) => row.resultingQuantity,
+    headClassName: "text-right",
+    className: "text-right tabular-nums",
+    cell: (row) => row.resultingQuantity,
+  },
+  {
+    key: "reason",
+    header: "Reason",
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.reason}</span>,
+  },
+  {
+    key: "by",
+    header: "By",
+    sortValue: (row) => row.adminEmail,
+    cell: (row) => <span className="font-mono text-xs text-muted-foreground">{row.adminEmail}</span>,
+  },
+  {
+    key: "when",
+    header: "When",
+    sortValue: (row) => new Date(row.createdAt).getTime(),
+    cell: (row) => <span className="text-sm text-muted-foreground">{formatDateTime(row.createdAt)}</span>,
+  },
+];
 
 function AdjustDialog({
   product,
