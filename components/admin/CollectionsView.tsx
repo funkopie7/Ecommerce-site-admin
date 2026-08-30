@@ -26,7 +26,8 @@ import { Label } from "@/components/ui/label";
 import { DataTable, type Column } from "@/components/admin/DataTable";
 import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
 import { ImageField } from "@/components/admin/ImageField";
-import type { Collection, Product } from "@/components/admin/types";
+import { QuickProductDialog } from "@/components/admin/QuickProductDialog";
+import type { Category, Collection, Product } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
 const slugify = (value: string) =>
@@ -38,6 +39,7 @@ const slugify = (value: string) =>
 export function CollectionsView() {
   const collections = useAdminResource<Collection[]>("/api/admin/collections");
   const products = useAdminResource<Product[]>("/api/admin/products");
+  const categories = useAdminResource<Category[]>("/api/admin/categories");
   const [editing, setEditing] = React.useState<Collection | null>(null);
   const [open, setOpen] = React.useState(false);
   const [notice, setNotice] = React.useState("");
@@ -193,6 +195,8 @@ export function CollectionsView() {
         onOpenChange={setOpen}
         collection={editing}
         products={products.data ?? []}
+        categories={categories.data ?? []}
+        onProductCreated={() => void products.reload()}
         onSaved={async (message) => {
           setNotice(message);
           await collections.reload();
@@ -207,12 +211,17 @@ function CollectionDialog({
   onOpenChange,
   collection,
   products,
+  categories,
+  onProductCreated,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   collection: Collection | null;
   products: Product[];
+  categories: Category[];
+  /** Fired after a quick-created product — reload the shared list; the dialog already checks it locally. */
+  onProductCreated?: () => void;
   onSaved: (message: string) => void;
 }) {
   const [name, setName] = React.useState("");
@@ -226,9 +235,18 @@ function CollectionDialog({
   const [items, setItems] = React.useState<Record<string, number>>({});
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [quickProductOpen, setQuickProductOpen] = React.useState(false);
+  // Holds a product created mid-dialog until the parent's reload lands it in
+  // `products` for real — otherwise the picker list wouldn't show it yet.
+  const [extraProducts, setExtraProducts] = React.useState<Product[]>([]);
+  const productOptions = React.useMemo(
+    () => [...products, ...extraProducts.filter((extra) => !products.some((product) => product.id === extra.id))],
+    [products, extraProducts],
+  );
 
   React.useEffect(() => {
     if (!open) return;
+    setExtraProducts([]);
     setName(collection?.name ?? "");
     setSlug(collection?.slug ?? "");
     setDescription(collection?.description ?? "");
@@ -249,7 +267,7 @@ function CollectionDialog({
   }, [open, collection]);
 
   const selected = Object.entries(items);
-  const productById = React.useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
+  const productById = React.useMemo(() => new Map(productOptions.map((product) => [product.id, product])), [productOptions]);
   /* The bundle's honest, unavoidable reference point: what the same figures
      cost bought one by one. Recomputed live as the picker below changes,
      not something the admin can type over. */
@@ -420,9 +438,22 @@ function CollectionDialog({
           />
 
           <div className="grid gap-1.5">
-            <Label>Figures in this collection ({selected.length})</Label>
+            <div className="flex items-center justify-between">
+              <Label>Figures in this collection ({selected.length})</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                disabled={categories.length === 0}
+                title={categories.length === 0 ? "Add a category first." : undefined}
+                onClick={() => setQuickProductOpen(true)}
+              >
+                <Plus className="size-3.5" /> New product
+              </Button>
+            </div>
             <div className="max-h-56 overflow-y-auto rounded-lg border border-border">
-              {products.map((product) => {
+              {productOptions.map((product) => {
                 const checked = product.id in items;
                 return (
                   <div
@@ -490,6 +521,17 @@ function CollectionDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <QuickProductDialog
+        open={quickProductOpen}
+        onOpenChange={setQuickProductOpen}
+        categories={categories}
+        onCreated={(product) => {
+          setExtraProducts((current) => [...current, product]);
+          toggle(product.id, true);
+          onProductCreated?.();
+        }}
+      />
     </Dialog>
   );
 }

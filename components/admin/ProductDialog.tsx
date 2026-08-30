@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Plus } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageField } from "@/components/admin/ImageField";
+import { QuickCategoryDialog } from "@/components/admin/QuickCategoryDialog";
+import { QuickTagDialog } from "@/components/admin/QuickTagDialog";
 import type { Category, Product, Tag } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
@@ -92,12 +95,15 @@ export function ProductDialog({
   onOpenChange,
   product,
   categories,
+  onCategoryCreated,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: Product | null;
   categories: Category[];
+  /** Fired after a quick-created category — reload the shared list; the dialog already selects it locally. */
+  onCategoryCreated?: () => void;
   onSaved: (message: string) => void;
 }) {
   const [draft, setDraft] = React.useState<Draft>(() => draftFrom(product, categories));
@@ -105,13 +111,27 @@ export function ProductDialog({
   const [saving, setSaving] = React.useState(false);
   const tags = useAdminResource<Tag[]>("/api/admin/tags");
   const tagRows = tags.data ?? [];
+  const [quickCategoryOpen, setQuickCategoryOpen] = React.useState(false);
+  const [quickTagOpen, setQuickTagOpen] = React.useState(false);
+  // Holds a category created mid-dialog until the parent's reload lands it in
+  // `categories` for real — otherwise the Select would show a blank value.
+  const [extraCategories, setExtraCategories] = React.useState<Category[]>([]);
+  const categoryOptions = React.useMemo(
+    () => [...categories, ...extraCategories.filter((extra) => !categories.some((category) => category.id === extra.id))],
+    [categories, extraCategories],
+  );
 
+  // `categories` deliberately isn't a dependency: quick-adding a category
+  // reloads the shared list while this dialog stays open, and re-running
+  // this reset on that reload would wipe out the categoryId it just set.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (open) {
       setDraft(draftFrom(product, categories));
       setError(null);
+      setExtraCategories([]);
     }
-  }, [open, product, categories]);
+  }, [open, product]);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
@@ -192,18 +212,35 @@ export function ProductDialog({
               />
             </Field>
             <Field label="Category" htmlFor="product-category">
-              <Select value={draft.categoryId} onValueChange={(value) => set("categoryId", value)}>
-                <SelectTrigger id="product-category">
-                  <SelectValue placeholder="Choose a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-1.5">
+                {/* Radix Select's items only mount once the popup has opened, so
+                    a value set programmatically (quick-created category) before
+                    that briefly finds no matching item and self-corrects with
+                    an empty onValueChange — guarded against here rather than
+                    let a real selection ever get silently wiped. */}
+                <Select value={draft.categoryId} onValueChange={(value) => value && set("categoryId", value)}>
+                  <SelectTrigger id="product-category">
+                    <SelectValue placeholder="Choose a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Quick add category"
+                  title="Quick add category"
+                  onClick={() => setQuickCategoryOpen(true)}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
             </Field>
             <Field label="SKU" htmlFor="product-sku">
               <Input
@@ -294,14 +331,19 @@ export function ProductDialog({
               row is still offered, so editing a figure never silently drops
               a badge it was carrying. */}
           <div className="grid gap-1.5">
-            <Label>Badges</Label>
+            <div className="flex items-center justify-between">
+              <Label>Badges</Label>
+              <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setQuickTagOpen(true)}>
+                <Plus className="size-3.5" /> New badge
+              </Button>
+            </div>
             {tags.error ? (
               <p className="text-xs text-destructive">Could not load tags ({tags.error}).</p>
             ) : tags.loading ? (
               <p className="text-xs text-muted-foreground">Loading tags…</p>
             ) : tagRows.length === 0 && draft.badges.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No tags exist yet. Create them on the Tags page and they'll be selectable here.
+                No tags exist yet — use &quot;New badge&quot; above or create them on the Tags page.
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -374,6 +416,24 @@ export function ProductDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <QuickCategoryDialog
+        open={quickCategoryOpen}
+        onOpenChange={setQuickCategoryOpen}
+        onCreated={(category) => {
+          setExtraCategories((current) => [...current, category]);
+          set("categoryId", category.id);
+          onCategoryCreated?.();
+        }}
+      />
+      <QuickTagDialog
+        open={quickTagOpen}
+        onOpenChange={setQuickTagOpen}
+        onCreated={async (tag) => {
+          await tags.reload();
+          set("badges", [...draft.badges, tag.code]);
+        }}
+      />
     </Dialog>
   );
 }

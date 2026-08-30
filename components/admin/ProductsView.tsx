@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ImageOff, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ImageOff, Minus, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
 import { formatMoney } from "@/lib/money";
@@ -25,8 +25,26 @@ export function ProductsView() {
   const [editing, setEditing] = React.useState<Product | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [notice, setNotice] = React.useState("");
+  const [adjustingId, setAdjustingId] = React.useState<string | null>(null);
 
   const rows = products.data ?? [];
+
+  // Same one-unit quick-adjust the Inventory page offers — kept here too so a
+  // stock nudge doesn't require leaving the product list to make it.
+  async function adjustStock(product: Product, delta: number) {
+    setAdjustingId(product.id);
+    try {
+      await adminFetch("/api/admin/inventory", {
+        method: "POST",
+        body: JSON.stringify({ productId: product.id, delta, reason: "Manual single-unit adjustment from admin" }),
+      });
+      await products.reload();
+    } catch (cause) {
+      setNotice(cause instanceof Error ? cause.message : "Could not adjust that stock level.");
+    } finally {
+      setAdjustingId(null);
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -105,18 +123,38 @@ export function ProductsView() {
       key: "stock",
       header: "Stock",
       sortValue: (row) => row.stockQuantity,
-      headClassName: "text-right",
-      className: "text-right",
+      headClassName: "w-32 text-right",
+      className: "w-32",
       cell: (row) => (
-        <span
-          className={
-            row.stockQuantity < LOW_STOCK_THRESHOLD
-              ? "font-medium tabular-nums text-destructive"
-              : "tabular-nums"
-          }
-        >
-          {row.stockQuantity}
-        </span>
+        <div className="flex items-center justify-end gap-1.5">
+          <span
+            className={
+              row.stockQuantity < LOW_STOCK_THRESHOLD
+                ? "w-6 text-right font-medium tabular-nums text-destructive"
+                : "w-6 text-right tabular-nums"
+            }
+          >
+            {row.stockQuantity}
+          </span>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            disabled={adjustingId === row.id || row.stockQuantity === 0}
+            aria-label={`Remove one ${row.name}`}
+            onClick={() => void adjustStock(row, -1)}
+          >
+            <Minus className="size-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            disabled={adjustingId === row.id}
+            aria-label={`Add one ${row.name}`}
+            onClick={() => void adjustStock(row, 1)}
+          >
+            <Plus className="size-3.5" />
+          </Button>
+        </div>
       ),
     },
     {
@@ -213,6 +251,7 @@ export function ProductsView() {
         onOpenChange={setDialogOpen}
         product={editing}
         categories={categories.data ?? []}
+        onCategoryCreated={() => void categories.reload()}
         onSaved={async (message) => {
           setNotice(message);
           await products.reload();
