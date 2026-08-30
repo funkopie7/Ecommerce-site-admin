@@ -111,6 +111,7 @@ model Customer {
   email String @unique
   passwordHash String
   phone String?
+  imageUrl String?
   addresses Address[]
   cart Cart?
   orders Order[]
