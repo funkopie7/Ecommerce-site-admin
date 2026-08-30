@@ -89,6 +89,8 @@ model Collection {
   visible Boolean @default(true)
   items CollectionItem[]
   wishlistItems WishlistItem[]
+  cartItems CartItem[] @relation("CartItemCollection")
+  orderItems OrderItem[] @relation("OrderItemCollection")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -149,6 +151,12 @@ model CartItem {
   cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
   quantity Int
+  // Set when this line was added via "add bundle to bag", so checkout can
+  // detect a complete bundle and price it at the collection's price instead
+  // of the sum of its parts. Cleared (not deleted) if the collection is
+  // removed or the line is edited standalone — see checkout's priceBundles.
+  collectionId String?
+  collection Collection? @relation("CartItemCollection", fields: [collectionId], references: [id], onDelete: SetNull)
   @@unique([cartId, productId])
 }
 
@@ -181,6 +189,11 @@ model OrderItem {
   sku String
   unitPrice Int
   quantity Int
+  // Set when checkout confirmed a complete bundle and priced this line as
+  // its prorated share of the collection's price rather than the product's
+  // own price. Record only — profit/revenue math needs nothing but unitPrice.
+  collectionId String?
+  collection Collection? @relation("OrderItemCollection", fields: [collectionId], references: [id], onDelete: SetNull)
 }
 
 model InventoryAdjustment {

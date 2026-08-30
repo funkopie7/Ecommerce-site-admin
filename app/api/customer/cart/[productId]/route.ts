@@ -16,7 +16,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!parsed.success) return error("Enter a valid quantity", 400);
   const cart = await ownedCart(session.customerId);
   if (!cart) return error("Cart not found", 404);
-  try { return NextResponse.json(await prisma.cartItem.update({ where: { cartId_productId: { cartId: cart.id, productId } }, data: { quantity: parsed.data.quantity } })); } catch { return error("Item not in your bag", 404); }
+  // A manual quantity edit breaks any bundle this line was part of — checkout
+  // would no longer see a complete set, so the tag is cleared here rather
+  // than left stale.
+  try { return NextResponse.json(await prisma.cartItem.update({ where: { cartId_productId: { cartId: cart.id, productId } }, data: { quantity: parsed.data.quantity, collectionId: null } })); } catch { return error("Item not in your bag", 404); }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ productId: string }> }) {
