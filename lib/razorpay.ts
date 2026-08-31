@@ -23,7 +23,14 @@ export async function createRazorpayOrder(amount: number, currency: string, rece
     },
     body: JSON.stringify({ amount, currency, receipt }),
   });
-  if (!response.ok) throw new Error("RAZORPAY_API_ERROR");
+  if (!response.ok) {
+    // Never log keyId/keySecret — the parsed error body from Razorpay itself
+    // doesn't contain them, only a code/description of what went wrong
+    // (auth failure, account not yet activated for live payments, etc.).
+    const body = await response.json().catch(() => null);
+    console.error("Razorpay order creation failed", response.status, body?.error ?? body);
+    throw new Error("RAZORPAY_API_ERROR");
+  }
   return response.json();
 }
 
