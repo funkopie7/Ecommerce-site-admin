@@ -10,8 +10,9 @@ const input = z.object({ addressId: z.string() });
 
 /** Step 1 of the Razorpay flow: quotes the customer's own cart (never a
  * client-supplied amount) and opens a Razorpay order against it. Doesn't
- * touch our Order table yet — that only happens once the payment is made
- * and its signature verified, at /razorpay-verify. */
+ * touch our Order table yet — that only happens once the payment is made,
+ * via whichever of /razorpay-verify or the payment.captured webhook claims
+ * the PaymentIntent created here first (see lib/paymentIntent.ts). */
 export async function POST(request: NextRequest) {
   const session = await customerFromRequest(request);
   if (!session) return error("Sign in required", 401);
@@ -33,6 +34,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const razorpayOrder = await createRazorpayOrder(subtotal, "INR", `cart_${session.customerId}_${Date.now()}`);
+    await prisma.paymentIntent.create({
+      data: { razorpayOrderId: razorpayOrder.id, customerId: session.customerId, addressId: parsed.data.addressId, amount: subtotal },
+    });
     return NextResponse.json({ razorpayOrderId: razorpayOrder.id, amount: razorpayOrder.amount, currency: razorpayOrder.currency });
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : "";

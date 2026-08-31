@@ -5,6 +5,7 @@ vi.mock("@/lib/prisma", () => ({
     address: { findFirst: vi.fn().mockResolvedValue({ id: "addr1", customerId: "cust1" }) },
     cart: { findUnique: vi.fn().mockResolvedValue({ id: "cart1", items: [{ productId: "p1", collectionId: null, quantity: 2, product: { price: 5000, visible: true, stockQuantity: 10 } }] }) },
     collection: { findMany: vi.fn().mockResolvedValue([]) },
+    paymentIntent: { create: vi.fn().mockResolvedValue({ id: "pi1" }) },
   },
 }));
 vi.mock("@/lib/auth", () => ({ customerFromRequest: vi.fn().mockResolvedValue({ customerId: "cust1", email: "a@b.com" }) }));
@@ -45,4 +46,11 @@ it("rejects an empty cart before calling Razorpay", async () => {
   const response = await post({ addressId: "addr1" });
   expect(response.status).toBe(400);
   expect(createRazorpayOrder).not.toHaveBeenCalled();
+});
+
+it("records a PaymentIntent against the Razorpay order id, so /razorpay-verify and the webhook have something to claim", async () => {
+  await post({ addressId: "addr1" });
+  expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
+    data: { razorpayOrderId: "order_razorpay1", customerId: "cust1", addressId: "addr1", amount: 10000 },
+  });
 });

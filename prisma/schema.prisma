@@ -119,6 +119,7 @@ model Customer {
   orders Order[]
   wishlist Wishlist?
   conversations Conversation[]
+  paymentIntents PaymentIntent[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -204,6 +205,25 @@ model Payment {
   method String?
   note String?
   recordedAt DateTime @default(now())
+}
+
+/** One row per Razorpay order we've quoted — created at /razorpay-order,
+ * "claimed" (status CREATED -> FULFILLED, atomically, via an
+ * updateMany/where-status guard) by whichever arrives first of: the
+ * client's own /razorpay-verify call, or the payment.captured webhook.
+ * That race-safe claim is what stops a webhook retry, or a webhook
+ * arriving alongside a successful client verify, from ever creating two
+ * Orders for the same payment. */
+model PaymentIntent {
+  id String @id @default(cuid())
+  razorpayOrderId String @unique
+  customerId String
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  addressId String
+  amount Int
+  status String @default("CREATED") // CREATED | FULFILLED
+  orderId String?
+  createdAt DateTime @default(now())
 }
 
 model OrderItem {

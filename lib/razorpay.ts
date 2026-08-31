@@ -37,3 +37,18 @@ export function verifyRazorpaySignature(orderId: string, paymentId: string, sign
   if (expected.length !== signature.length) return false;
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
+
+/** A different signature scheme from the one above, and a different
+ * secret — this one's keyed with RAZORPAY_WEBHOOK_SECRET (set in the
+ * Razorpay dashboard's own webhook screen, not the account's API secret),
+ * and signs the *raw* request body rather than "order_id|payment_id". The
+ * caller must pass the untouched body text, not a re-serialized/parsed
+ * version — HMAC over a re-stringified JSON object won't byte-match what
+ * Razorpay actually signed. */
+export function verifyRazorpayWebhookSignature(rawBody: string, signature: string): boolean {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!secret) throw new Error("RAZORPAY_WEBHOOK_NOT_CONFIGURED");
+  const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+  if (expected.length !== signature.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
