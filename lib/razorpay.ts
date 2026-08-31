@@ -11,6 +11,18 @@ function credentials() {
 
 export type RazorpayOrder = { id: string; amount: number; currency: string; receipt: string };
 
+/** Carries Razorpay's own human-readable description (safe to show —
+ * account credentials never appear in it) so a live-mode failure is
+ * diagnosable from the checkout error message itself, not just server
+ * logs. */
+export class RazorpayApiError extends Error {
+  description: string;
+  constructor(description: string) {
+    super(description);
+    this.description = description;
+  }
+}
+
 /** amount is in paise (Razorpay's smallest-unit convention), matching how
  * every price in this codebase is already stored — no conversion needed. */
 export async function createRazorpayOrder(amount: number, currency: string, receipt: string): Promise<RazorpayOrder> {
@@ -24,12 +36,14 @@ export async function createRazorpayOrder(amount: number, currency: string, rece
     body: JSON.stringify({ amount, currency, receipt }),
   });
   if (!response.ok) {
-    // Never log keyId/keySecret — the parsed error body from Razorpay itself
-    // doesn't contain them, only a code/description of what went wrong
-    // (auth failure, account not yet activated for live payments, etc.).
+    // Never log/surface keyId/keySecret — the parsed error body from
+    // Razorpay itself doesn't contain them, only a code/description of
+    // what went wrong (auth failure, account not yet activated for live
+    // payments, etc.), which is safe to both log and show the customer.
     const body = await response.json().catch(() => null);
+    const description: string = body?.error?.description || `HTTP ${response.status}`;
     console.error("Razorpay order creation failed", response.status, body?.error ?? body);
-    throw new Error("RAZORPAY_API_ERROR");
+    throw new RazorpayApiError(description);
   }
   return response.json();
 }

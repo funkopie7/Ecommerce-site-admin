@@ -4,7 +4,7 @@ import { customerFromRequest } from "@/lib/auth";
 import { error } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { pricedCart, checkoutErrorResponse } from "@/lib/createOrder";
-import { createRazorpayOrder } from "@/lib/razorpay";
+import { createRazorpayOrder, RazorpayApiError } from "@/lib/razorpay";
 
 const input = z.object({ addressId: z.string() });
 
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ razorpayOrderId: razorpayOrder.id, amount: razorpayOrder.amount, currency: razorpayOrder.currency });
   } catch (caught) {
+    if (caught instanceof RazorpayApiError) return error(`Could not start the payment: ${caught.description}`, 502);
     const message = caught instanceof Error ? caught.message : "";
     if (message === "RAZORPAY_NOT_CONFIGURED") return error("Online payment isn't set up yet", 401);
     return error("Could not start the payment — try again", 500);
