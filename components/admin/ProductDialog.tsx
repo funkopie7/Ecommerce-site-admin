@@ -194,7 +194,7 @@ export function ProductDialog({
 
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" htmlFor="product-name">
+            <Field label="Name" htmlFor="product-name" required>
               <Input
                 id="product-name"
                 required
@@ -250,7 +250,7 @@ export function ProductDialog({
             >
               <Input id="product-sku" readOnly disabled value={product ? draft.sku : "Generated automatically"} />
             </Field>
-            <Field label="Slug" htmlFor="product-slug">
+            <Field label="Slug" htmlFor="product-slug" required>
               <Input
                 id="product-slug"
                 required
@@ -266,6 +266,7 @@ export function ProductDialog({
             label="Description"
             htmlFor="product-description"
             hint="At least 10 characters — this is the storefront copy."
+            required
           >
             <textarea
               id="product-description"
@@ -280,7 +281,7 @@ export function ProductDialog({
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Price (₹)" htmlFor="product-price">
+            <Field label="Price (₹)" htmlFor="product-price" required>
               <Input
                 id="product-price"
                 required
@@ -291,7 +292,7 @@ export function ProductDialog({
                 onChange={(event) => set("price", event.target.value)}
               />
             </Field>
-            <Field label="Cost (₹)" htmlFor="product-cost">
+            <Field label="Cost (₹)" htmlFor="product-cost" required>
               <Input
                 id="product-cost"
                 required
@@ -302,7 +303,7 @@ export function ProductDialog({
                 onChange={(event) => set("cost", event.target.value)}
               />
             </Field>
-            <Field label="Stock" htmlFor="product-stock">
+            <Field label="Stock" htmlFor="product-stock" required>
               <Input
                 id="product-stock"
                 required
@@ -440,16 +441,20 @@ function Field({
   label,
   htmlFor,
   hint,
+  required,
   children,
 }: {
   label: string;
   htmlFor: string;
   hint?: string;
+  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label htmlFor={htmlFor}>
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>

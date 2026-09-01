@@ -254,7 +254,7 @@ function TagDialog({
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="tag-label">Label</Label>
+            <Label htmlFor="tag-label">Label <span className="text-destructive">*</span></Label>
             <Input
               id="tag-label"
               required
@@ -270,7 +270,7 @@ function TagDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="tag-code">Code</Label>
+            <Label htmlFor="tag-code">Code <span className="text-destructive">*</span></Label>
             <Input
               id="tag-code"
               required

@@ -84,7 +84,7 @@ export function QuickTagDialog({
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="quick-tag-label">Label</Label>
+            <Label htmlFor="quick-tag-label">Label <span className="text-destructive">*</span></Label>
             <Input
               id="quick-tag-label"
               required
@@ -100,7 +100,7 @@ export function QuickTagDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="quick-tag-code">Code</Label>
+            <Label htmlFor="quick-tag-code">Code <span className="text-destructive">*</span></Label>
             <Input
               id="quick-tag-code"
               required

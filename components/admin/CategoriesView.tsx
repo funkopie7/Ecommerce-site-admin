@@ -251,7 +251,7 @@ function CategoryDialog({
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="category-name">Name</Label>
+            <Label htmlFor="category-name">Name <span className="text-destructive">*</span></Label>
             <Input
               id="category-name"
               required
@@ -265,7 +265,7 @@ function CategoryDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="category-slug">Slug</Label>
+            <Label htmlFor="category-slug">Slug <span className="text-destructive">*</span></Label>
             <Input
               id="category-slug"
               required

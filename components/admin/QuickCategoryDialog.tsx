@@ -80,7 +80,7 @@ export function QuickCategoryDialog({
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="quick-category-name">Name</Label>
+            <Label htmlFor="quick-category-name">Name <span className="text-destructive">*</span></Label>
             <Input
               id="quick-category-name"
               required
@@ -95,7 +95,7 @@ export function QuickCategoryDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="quick-category-slug">Slug</Label>
+            <Label htmlFor="quick-category-slug">Slug <span className="text-destructive">*</span></Label>
             <Input
               id="quick-category-slug"
               required

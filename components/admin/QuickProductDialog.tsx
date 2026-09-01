@@ -137,7 +137,7 @@ export function QuickProductDialog({
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="quick-product-name">Name</Label>
+              <Label htmlFor="quick-product-name">Name <span className="text-destructive">*</span></Label>
               <Input
                 id="quick-product-name"
                 required
@@ -183,7 +183,7 @@ export function QuickProductDialog({
               </div>
             </div>
             <div className="grid gap-1.5 sm:col-span-2">
-              <Label htmlFor="quick-product-slug">Slug</Label>
+              <Label htmlFor="quick-product-slug">Slug <span className="text-destructive">*</span></Label>
               <Input
                 id="quick-product-slug"
                 required
@@ -195,7 +195,7 @@ export function QuickProductDialog({
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="quick-product-description">Description</Label>
+            <Label htmlFor="quick-product-description">Description <span className="text-destructive">*</span></Label>
             <textarea
               id="quick-product-description"
               required
@@ -210,7 +210,7 @@ export function QuickProductDialog({
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="quick-product-price">Price (₹)</Label>
+              <Label htmlFor="quick-product-price">Price (₹) <span className="text-destructive">*</span></Label>
               <Input
                 id="quick-product-price"
                 required
@@ -222,7 +222,7 @@ export function QuickProductDialog({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="quick-product-cost">Cost (₹)</Label>
+              <Label htmlFor="quick-product-cost">Cost (₹) <span className="text-destructive">*</span></Label>
               <Input
                 id="quick-product-cost"
                 required
@@ -234,7 +234,7 @@ export function QuickProductDialog({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="quick-product-stock">Stock</Label>
+              <Label htmlFor="quick-product-stock">Stock <span className="text-destructive">*</span></Label>
               <Input
                 id="quick-product-stock"
                 required

@@ -357,7 +357,7 @@ function CollectionDialog({
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="collection-name">Name</Label>
+              <Label htmlFor="collection-name">Name <span className="text-destructive">*</span></Label>
               <Input
                 id="collection-name"
                 required
@@ -371,7 +371,7 @@ function CollectionDialog({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="collection-slug">Slug</Label>
+              <Label htmlFor="collection-slug">Slug <span className="text-destructive">*</span></Label>
               <Input
                 id="collection-slug"
                 required
@@ -393,7 +393,7 @@ function CollectionDialog({
               {hasDiscount ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-1.5">
-                    <Label htmlFor="collection-price">Discounted bundle price (₹)</Label>
+                    <Label htmlFor="collection-price">Discounted bundle price (₹) <span className="text-destructive">*</span></Label>
                     <Input
                       id="collection-price"
                       required

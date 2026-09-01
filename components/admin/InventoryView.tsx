@@ -297,7 +297,7 @@ function AdjustDialog({
             </p>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="adjust-reason">Reason</Label>
+            <Label htmlFor="adjust-reason">Reason <span className="text-destructive">*</span></Label>
             <Input
               id="adjust-reason"
               required

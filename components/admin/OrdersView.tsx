@@ -325,7 +325,7 @@ function ShipDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="ship-tracking">Tracking code</Label>
+            <Label htmlFor="ship-tracking">Tracking code <span className="text-destructive">*</span></Label>
             <Input
               id="ship-tracking"
               required
