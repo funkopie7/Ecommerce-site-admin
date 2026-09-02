@@ -44,6 +44,7 @@ export type Product = {
   name: string;
   description: string;
   price: number;
+  compareAtPrice: number | null;
   cost: number;
   stockQuantity: number;
   imageUrl: string | null;

@@ -50,6 +50,7 @@ model Product {
   name String
   description String
   price Int
+  compareAtPrice Int?
   cost Int
   stockQuantity Int @default(0)
   imageUrl String?

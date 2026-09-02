@@ -4,7 +4,7 @@ import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
-const productInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().min(10), price: z.number().int().nonnegative(), cost: z.number().int().nonnegative(), stockQuantity: z.number().int().nonnegative(), categoryId: z.string(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().optional(), visible: z.boolean().default(true), badges: z.array(z.string()).optional() });
+const productInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().min(10), price: z.number().int().nonnegative(), compareAtPrice: z.number().int().nonnegative().optional(), cost: z.number().int().nonnegative(), stockQuantity: z.number().int().nonnegative(), categoryId: z.string(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().optional(), visible: z.boolean().default(true), badges: z.array(z.string()).optional() });
 
 /**
  * SKU is generated, not typed: the product's first word, upper-cased, plus

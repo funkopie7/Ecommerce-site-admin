@@ -40,6 +40,7 @@ type Draft = {
   slug: string;
   description: string;
   price: string;
+  compareAtPrice: string;
   cost: string;
   stockQuantity: string;
   categoryId: string;
@@ -57,6 +58,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       slug: "",
       description: "",
       price: "",
+      compareAtPrice: "",
       cost: "",
       stockQuantity: "0",
       categoryId: categories[0]?.id ?? "",
@@ -74,6 +76,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
     slug: product.slug,
     description: product.description,
     price: (product.price / 100).toString(),
+    compareAtPrice: product.compareAtPrice !== null ? (product.compareAtPrice / 100).toString() : "",
     cost: (product.cost / 100).toString(),
     stockQuantity: product.stockQuantity.toString(),
     categoryId: product.categoryId,
@@ -158,6 +161,8 @@ export function ProductDialog({
       visible: draft.visible,
       badges: draft.badges,
     };
+    if (draft.compareAtPrice.trim()) payload.compareAtPrice = Math.round(Number(draft.compareAtPrice) * 100);
+    else if (product) payload.compareAtPrice = null;
     // The route validates imageUrl as a URL, so only send it when it is one.
     if (draft.imageUrl.trim()) payload.imageUrl = draft.imageUrl.trim();
     // hoverImageUrl is nullable server-side, so an edit that clears it back
@@ -287,7 +292,7 @@ export function ProductDialog({
             />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-4">
             <Field label="Price (₹)" htmlFor="product-price" required>
               <Input
                 id="product-price"
@@ -297,6 +302,17 @@ export function ProductDialog({
                 step="0.01"
                 value={draft.price}
                 onChange={(event) => set("price", event.target.value)}
+              />
+            </Field>
+            <Field label="Compare-at (₹)" htmlFor="product-compare-at">
+              <Input
+                id="product-compare-at"
+                type="number"
+                min="0"
+                step="0.01"
+                value={draft.compareAtPrice}
+                onChange={(event) => set("compareAtPrice", event.target.value)}
+                placeholder="Optional"
               />
             </Field>
             <Field label="Cost (₹)" htmlFor="product-cost" required>

@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "next dev -p 3900",
     "postinstall": "prisma generate",
-    "build": "prisma migrate deploy && next build",
+    "build": "prisma migrate deploy && node scripts/importLegacyCatalog.mjs && next build",
     "start": "next start -p 3900",
     "lint": "eslint .",
     "test": "vitest run",
