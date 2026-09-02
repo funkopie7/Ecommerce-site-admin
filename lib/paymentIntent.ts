@@ -25,7 +25,7 @@ export async function fulfillPaymentIntent(tx: Prisma.TransactionClient, razorpa
     return { alreadyFulfilled: true, orderId: fresh?.orderId ?? null };
   }
 
-  const order = await createOrderFromCart(tx, { customerId: intent.customerId, addressId: intent.addressId, paymentStatus: "PAID", recordPayment: payment });
+  const order = await createOrderFromCart(tx, { customerId: intent.customerId, addressId: intent.addressId, paymentStatus: "PAID", recordPayment: payment, couponCode: intent.discountCode ?? undefined });
   await tx.paymentIntent.update({ where: { razorpayOrderId }, data: { orderId: order.id } });
   return { alreadyFulfilled: false, order };
 }

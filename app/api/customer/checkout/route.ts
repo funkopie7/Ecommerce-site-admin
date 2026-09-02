@@ -9,7 +9,7 @@ import { createOrderFromCart, checkoutErrorResponse } from "@/lib/createOrder";
 // /api/customer/checkout/razorpay-verify instead of the "DUMMY_CARD" demo
 // path this used to accept — COD is the only method that confirms an order
 // straight from this route.
-const input = z.object({ addressId: z.string(), paymentMethod: z.enum(["COD"]) });
+const input = z.object({ addressId: z.string(), paymentMethod: z.enum(["COD"]), couponCode: z.string().optional() });
 
 export async function POST(request: NextRequest) {
   const session = await customerFromRequest(request);
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const order = await prisma.$transaction((tx) =>
-      createOrderFromCart(tx, { customerId: session.customerId, addressId: parsed.data.addressId, paymentStatus: "SIMULATED_PAID" }),
+      createOrderFromCart(tx, { customerId: session.customerId, addressId: parsed.data.addressId, paymentStatus: "SIMULATED_PAID", couponCode: parsed.data.couponCode }),
     );
     return NextResponse.json(order, { status: 201 });
   } catch (caught) {

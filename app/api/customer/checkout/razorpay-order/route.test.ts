@@ -51,6 +51,6 @@ it("rejects an empty cart before calling Razorpay", async () => {
 it("records a PaymentIntent against the Razorpay order id, so /razorpay-verify and the webhook have something to claim", async () => {
   await post({ addressId: "addr1" });
   expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
-    data: { razorpayOrderId: "order_razorpay1", customerId: "cust1", addressId: "addr1", amount: 10000 },
+    data: { razorpayOrderId: "order_razorpay1", customerId: "cust1", addressId: "addr1", amount: 10000, discountCode: null, discountAmount: 0 },
   });
 });

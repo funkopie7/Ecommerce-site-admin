@@ -188,6 +188,8 @@ model Order {
   paymentStatus PaymentStatus @default(PENDING)
   subtotal Int
   shipping Int @default(0)
+  discountCode String?
+  discountAmount Int @default(0)
   total Int
   // Cumulative payments recorded so far — kept in sync with the Payment log
   // below inside the same transaction, so filtering/sorting by it never
@@ -229,9 +231,29 @@ model PaymentIntent {
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   addressId String
   amount Int
+  discountCode String?
+  discountAmount Int @default(0)
   status String @default("CREATED") // CREATED | FULFILLED
   orderId String?
   createdAt DateTime @default(now())
+}
+
+/** Percent-off or flat-off codes, redeemable at checkout. `value` is a whole
+ * percent (0-100) for PERCENT, or paise for FIXED — same minor-unit
+ * convention as every other money field in this schema. `usedCount` is
+ * incremented in the same transaction that creates the order it was applied
+ * to, so it can never drift from the orders that actually redeemed it. */
+model Coupon {
+  id String @id @default(cuid())
+  code String @unique
+  type String // "PERCENT" | "FIXED"
+  value Int
+  active Boolean @default(true)
+  maxUses Int?
+  usedCount Int @default(0)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OrderItem {

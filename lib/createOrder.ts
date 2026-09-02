@@ -1,15 +1,23 @@
 import type { Prisma, PaymentStatus } from "@prisma/client";
 import { priceBundles, totalForItems, type BundleCartLine, type CollectionDef } from "@/lib/checkout";
+import { findActiveCoupon, discountFor, couponErrorMessage } from "@/lib/coupon";
 
 export type OrderPayment = { method: string; note?: string };
 
 /** Reads the customer's own cart from the DB (never trusts a client-supplied
- * total) and prices any bundles. Shared by the Razorpay quote step (read-only
- * — pass the base `prisma` client) and createOrderFromCart below (inside a
- * transaction — pass `tx`), so the amount quoted to Razorpay and the amount
- * the order is actually created for come from the exact same computation.
- * Throws "CART" | "STOCK". */
-export async function pricedCart(client: Prisma.TransactionClient, customerId: string) {
+ * total) and prices any bundles, then any coupon. Shared by the Razorpay
+ * quote step (read-only — pass the base `prisma` client) and
+ * createOrderFromCart below (inside a transaction — pass `tx`), so the
+ * amount quoted to Razorpay and the amount the order is actually created for
+ * come from the exact same computation.
+ *
+ * Only reads the coupon here — it does not increment usedCount, since a
+ * quote that's never turned into an order (an abandoned Razorpay modal)
+ * must not burn a redemption. createOrderFromCart increments it itself,
+ * inside the same transaction that actually creates the order.
+ *
+ * Throws "CART" | "STOCK" | "COUPON_INVALID" | "COUPON_EXPIRED" | "COUPON_EXHAUSTED". */
+export async function pricedCart(client: Prisma.TransactionClient, customerId: string, couponCode?: string) {
   const cart = await client.cart.findUnique({ where: { customerId }, include: { items: { include: { product: true } } } });
   if (!cart?.items.length) throw new Error("CART");
   for (const item of cart.items) if (!item.product.visible || item.product.stockQuantity < item.quantity) throw new Error("STOCK");
@@ -35,7 +43,17 @@ export async function pricedCart(client: Prisma.TransactionClient, customerId: s
     quantity: item.quantity,
   }));
   const priced = priceBundles(lines, collections);
-  return { cart, priced, subtotal: totalForItems(priced) };
+  const subtotal = totalForItems(priced);
+
+  let discount = 0;
+  let appliedCouponCode: string | null = null;
+  if (couponCode?.trim()) {
+    const coupon = await findActiveCoupon(client, couponCode);
+    discount = discountFor(coupon, subtotal);
+    appliedCouponCode = coupon.code;
+  }
+
+  return { cart, priced, subtotal, discount, total: subtotal - discount, couponCode: appliedCouponCode };
 }
 
 /** Shared by the COD/demo checkout flow and the Razorpay-verified flow —
@@ -49,12 +67,12 @@ export async function pricedCart(client: Prisma.TransactionClient, customerId: s
  * existing behaviour is unchanged by this extraction. */
 export async function createOrderFromCart(
   tx: Prisma.TransactionClient,
-  args: { customerId: string; addressId: string; paymentStatus: PaymentStatus; recordPayment?: OrderPayment },
+  args: { customerId: string; addressId: string; paymentStatus: PaymentStatus; recordPayment?: OrderPayment; couponCode?: string },
 ) {
   const address = await tx.address.findFirst({ where: { id: args.addressId, customerId: args.customerId } });
   if (!address) throw new Error("ADDRESS");
 
-  const { cart, priced, subtotal } = await pricedCart(tx, args.customerId);
+  const { cart, priced, subtotal, discount, total, couponCode } = await pricedCart(tx, args.customerId, args.couponCode);
   const pricedByProductId = new Map(priced.map((line) => [line.productId, line]));
 
   const order = await tx.order.create({
@@ -62,9 +80,11 @@ export async function createOrderFromCart(
       number: `MC-${Date.now().toString().slice(-8)}`,
       customerId: args.customerId,
       subtotal,
-      total: subtotal,
+      discountCode: couponCode,
+      discountAmount: discount,
+      total,
       paymentStatus: args.paymentStatus,
-      ...(args.recordPayment ? { amountPaid: subtotal } : {}),
+      ...(args.recordPayment ? { amountPaid: total } : {}),
       status: "CONFIRMED",
       addressSnapshot: address,
       items: {
@@ -83,7 +103,8 @@ export async function createOrderFromCart(
     },
   });
 
-  if (args.recordPayment) await tx.payment.create({ data: { orderId: order.id, amount: subtotal, method: args.recordPayment.method, note: args.recordPayment.note } });
+  if (args.recordPayment) await tx.payment.create({ data: { orderId: order.id, amount: total, method: args.recordPayment.method, note: args.recordPayment.note } });
+  if (couponCode) await tx.coupon.update({ where: { code: couponCode }, data: { usedCount: { increment: 1 } } });
 
   for (const item of cart.items) await tx.product.update({ where: { id: item.productId }, data: { stockQuantity: { decrement: item.quantity } } });
   await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
@@ -95,5 +116,7 @@ export function checkoutErrorResponse(caught: unknown): { message: string; statu
   if (code === "STOCK") return { message: "One or more items are no longer in stock", status: 409 };
   if (code === "CART") return { message: "Your bag is empty", status: 400 };
   if (code === "ADDRESS") return { message: "Delivery address not found", status: 400 };
+  const couponMessage = couponErrorMessage(code);
+  if (couponMessage) return { message: couponMessage, status: 400 };
   return { message: "Could not place your order", status: 500 };
 }

@@ -7,6 +7,14 @@ import { adminFetch } from "@/lib/adminApi";
 import { formatMoney } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,13 +34,35 @@ export function ProductsView() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [notice, setNotice] = React.useState("");
   const [adjustingId, setAdjustingId] = React.useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = React.useState("all");
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [minPrice, setMinPrice] = React.useState("");
+  const [maxPrice, setMaxPrice] = React.useState("");
 
   // Alphabetical by name, not the API's updatedAt-desc order — otherwise a
   // quick stock adjustment (which touches updatedAt) jumps the row to the
   // top instead of leaving it where it was.
-  const rows = React.useMemo(
+  const sortedByName = React.useMemo(
     () => [...(products.data ?? [])].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
     [products.data],
+  );
+
+  // Price fields are rupees on screen but paise in the row, same conversion
+  // ProductDialog uses on the way in.
+  const minPaise = minPrice.trim() ? Math.round(Number(minPrice) * 100) : undefined;
+  const maxPaise = maxPrice.trim() ? Math.round(Number(maxPrice) * 100) : undefined;
+
+  const rows = React.useMemo(
+    () =>
+      sortedByName.filter((row) => {
+        if (categoryFilter !== "all" && row.categoryId !== categoryFilter) return false;
+        if (statusFilter === "visible" && !row.visible) return false;
+        if (statusFilter === "hidden" && row.visible) return false;
+        if (minPaise !== undefined && !Number.isNaN(minPaise) && row.price < minPaise) return false;
+        if (maxPaise !== undefined && !Number.isNaN(maxPaise) && row.price > maxPaise) return false;
+        return true;
+      }),
+    [sortedByName, categoryFilter, statusFilter, minPaise, maxPaise],
   );
 
   // Same one-unit quick-adjust the Inventory page offers — kept here too so a
@@ -249,6 +279,54 @@ export function ProductsView() {
           }
           searchPlaceholder="Search name, SKU, character…"
           emptyMessage="No products yet. Add your first figure."
+          toolbar={
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {(categories.data ?? []).map((category) => (
+                    <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="visible">Visible</SelectItem>
+                  <SelectItem value="hidden">Hidden</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min="0"
+                inputMode="decimal"
+                placeholder="Min ₹"
+                value={minPrice}
+                onChange={(event) => setMinPrice(event.target.value)}
+                className="w-24"
+              />
+              <Input
+                type="number"
+                min="0"
+                inputMode="decimal"
+                placeholder="Max ₹"
+                value={maxPrice}
+                onChange={(event) => setMaxPrice(event.target.value)}
+                className="w-24"
+              />
+              {(categoryFilter !== "all" || statusFilter !== "all" || minPrice || maxPrice) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setCategoryFilter("all"); setStatusFilter("all"); setMinPrice(""); setMaxPrice(""); }}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          }
         />
       )}
 

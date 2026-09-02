@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { pricedCart, checkoutErrorResponse } from "@/lib/createOrder";
 import { createRazorpayOrder, RazorpayApiError } from "@/lib/razorpay";
 
-const input = z.object({ addressId: z.string() });
+const input = z.object({ addressId: z.string(), couponCode: z.string().optional() });
 
 /** Step 1 of the Razorpay flow: quotes the customer's own cart (never a
  * client-supplied amount) and opens a Razorpay order against it. Doesn't
@@ -22,20 +22,20 @@ export async function POST(request: NextRequest) {
   const address = await prisma.address.findFirst({ where: { id: parsed.data.addressId, customerId: session.customerId } });
   if (!address) return error("Delivery address not found", 400);
 
-  let subtotal: number;
+  let total: number, discount: number, couponCode: string | null;
   try {
-    ({ subtotal } = await pricedCart(prisma, session.customerId));
+    ({ total, discount, couponCode } = await pricedCart(prisma, session.customerId, parsed.data.couponCode));
   } catch (caught) {
     const { message, status } = checkoutErrorResponse(caught);
     return error(message, status);
   }
   // Razorpay rejects orders under 100 paise (₹1).
-  if (subtotal < 100) return error("Your bag total is too small to check out", 400);
+  if (total < 100) return error("Your bag total is too small to check out", 400);
 
   try {
-    const razorpayOrder = await createRazorpayOrder(subtotal, "INR", `cart_${session.customerId}_${Date.now()}`);
+    const razorpayOrder = await createRazorpayOrder(total, "INR", `cart_${session.customerId}_${Date.now()}`);
     await prisma.paymentIntent.create({
-      data: { razorpayOrderId: razorpayOrder.id, customerId: session.customerId, addressId: parsed.data.addressId, amount: subtotal },
+      data: { razorpayOrderId: razorpayOrder.id, customerId: session.customerId, addressId: parsed.data.addressId, amount: total, discountCode: couponCode, discountAmount: discount },
     });
     return NextResponse.json({ razorpayOrderId: razorpayOrder.id, amount: razorpayOrder.amount, currency: razorpayOrder.currency });
   } catch (caught) {

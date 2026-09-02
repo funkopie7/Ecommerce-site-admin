@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   MessageCircle,
   Package,
+  Percent,
   Settings,
   ShoppingBag,
   Tags,
@@ -43,6 +44,7 @@ export const navGroups: NavGroup[] = [
       { title: "Orders", url: "/orders", icon: Truck },
       { title: "Inventory", url: "/inventory", icon: ShoppingBag },
       { title: "Customers", url: "/customers", icon: Users },
+      { title: "Coupons", url: "/coupons", icon: Percent },
     ],
   },
   {

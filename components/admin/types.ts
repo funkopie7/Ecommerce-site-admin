@@ -4,6 +4,20 @@
  * `include`, so the UI never reads a field the API doesn't send.
  */
 
+export type Coupon = {
+  id: string;
+  code: string;
+  type: "PERCENT" | "FIXED";
+  // Whole percent for PERCENT, paise for FIXED — same convention as the
+  // route that writes it (see app/api/admin/coupons/route.ts).
+  value: number;
+  active: boolean;
+  maxUses: number | null;
+  usedCount: number;
+  expiresAt: string | null;
+  createdAt: string;
+};
+
 export type Category = {
   id: string;
   name: string;
