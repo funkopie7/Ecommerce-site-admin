@@ -33,6 +33,7 @@ export type Product = {
   cost: number;
   stockQuantity: number;
   imageUrl: string | null;
+  hoverImageUrl: string | null;
   visible: boolean;
   franchise: string | null;
   character: string | null;

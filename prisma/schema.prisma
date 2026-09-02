@@ -53,6 +53,7 @@ model Product {
   cost Int
   stockQuantity Int @default(0)
   imageUrl String?
+  hoverImageUrl String?
   visible Boolean @default(true)
   franchise String?
   character String?

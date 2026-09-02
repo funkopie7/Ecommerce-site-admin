@@ -44,6 +44,7 @@ type Draft = {
   stockQuantity: string;
   categoryId: string;
   imageUrl: string;
+  hoverImageUrl: string;
   visible: boolean;
   badges: string[];
 };
@@ -60,6 +61,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       stockQuantity: "0",
       categoryId: categories[0]?.id ?? "",
       imageUrl: "",
+      hoverImageUrl: "",
       // New figures start hidden-safe (see the dialog copy below) — check the
       // box to launch immediately.
       visible: false,
@@ -76,6 +78,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
     stockQuantity: product.stockQuantity.toString(),
     categoryId: product.categoryId,
     imageUrl: product.imageUrl ?? "",
+    hoverImageUrl: product.hoverImageUrl ?? "",
     visible: product.visible,
     badges: product.badges ?? [],
   };
@@ -157,6 +160,10 @@ export function ProductDialog({
     };
     // The route validates imageUrl as a URL, so only send it when it is one.
     if (draft.imageUrl.trim()) payload.imageUrl = draft.imageUrl.trim();
+    // hoverImageUrl is nullable server-side, so an edit that clears it back
+    // to blank still has to send null rather than being silently dropped.
+    if (draft.hoverImageUrl.trim()) payload.hoverImageUrl = draft.hoverImageUrl.trim();
+    else if (product) payload.hoverImageUrl = null;
 
     try {
       if (product) {
@@ -322,6 +329,14 @@ export function ProductDialog({
             value={draft.imageUrl}
             onChange={(url) => set("imageUrl", url)}
             hint={product ? "Leave blank to keep the current image." : undefined}
+          />
+
+          <ImageField
+            id="product-hover-image"
+            label="Hover image"
+            value={draft.hoverImageUrl}
+            onChange={(url) => set("hoverImageUrl", url)}
+            hint="Shown on crossfade when a shopper hovers the card — optional."
           />
 
           {/* The stickers this figure wears on the storefront. The list is the

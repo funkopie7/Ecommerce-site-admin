@@ -4,7 +4,7 @@ import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
-const productUpdate = z.object({ name: z.string().min(2).optional(), sku: z.string().min(2).optional(), slug: z.string().min(2).optional(), description: z.string().min(10).optional(), price: z.number().int().nonnegative().optional(), cost: z.number().int().nonnegative().optional(), stockQuantity: z.number().int().nonnegative().optional(), categoryId: z.string().optional(), imageUrl: z.string().url().optional(), visible: z.boolean().optional(), badges: z.array(z.string()).optional() });
+const productUpdate = z.object({ name: z.string().min(2).optional(), sku: z.string().min(2).optional(), slug: z.string().min(2).optional(), description: z.string().min(10).optional(), price: z.number().int().nonnegative().optional(), cost: z.number().int().nonnegative().optional(), stockQuantity: z.number().int().nonnegative().optional(), categoryId: z.string().optional(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().nullable().optional(), visible: z.boolean().optional(), badges: z.array(z.string()).optional() });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin(request))) return error("Administrator access required", 401);
