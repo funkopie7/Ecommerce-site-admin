@@ -55,6 +55,7 @@ model Product {
   stockQuantity Int @default(0)
   imageUrl String?
   hoverImageUrl String?
+  images String[] @default([])
   visible Boolean @default(true)
   franchise String?
   character String?
