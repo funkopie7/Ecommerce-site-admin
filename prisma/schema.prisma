@@ -4,14 +4,27 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  // Runtime queries go through Supabase's pooled connection (DATABASE_URL,
-  // port 6543/pgbouncer) — fine for normal queries, but `prisma migrate
-  // deploy` needs a direct connection to take the advisory lock it
-  // coordinates concurrent migration runs with, which a transaction-mode
-  // pooler doesn't support and just hangs on. directUrl only affects
-  // migrate/introspect commands, not the app's actual runtime connection.
-  url       = env("DATABASE_URL")
-  directUrl = env("POSTGRES_URL_NON_POOLING")
+  // Runtime queries go through Supabase's pooled connection (port
+  // 6543/pgbouncer) — fine for normal queries, but `prisma migrate deploy`
+  // needs a direct connection to take the advisory lock it coordinates
+  // concurrent migration runs with, which a transaction-mode pooler doesn't
+  // support and just hangs on. directUrl only affects migrate/introspect
+  // commands, not the app's actual runtime connection.
+  //
+  // MUMBAI_ prefix: the database lives in ap-south-1 (Mumbai) so it sits
+  // next to the people using the shop, instead of the us-east-1 default
+  // that put every cart and sign-in a quarter-second round trip away.
+  //
+  // The prefix is what keeps the two Supabase projects from fighting. The
+  // ORIGINAL project is still connected to this app and still owns the
+  // 1.1 GB of product images — its unprefixed SUPABASE_URL and
+  // SUPABASE_SERVICE_ROLE_KEY are what the storage uploads use, and every
+  // Product.imageUrl still points at it. Only the database moved. Pointing
+  // these two at the prefixed vars rather than overwriting the unprefixed
+  // ones also means the old integration can't quietly revert the cutover
+  // the next time it syncs its own variables back.
+  url       = env("MUMBAI_POSTGRES_PRISMA_URL")
+  directUrl = env("MUMBAI_POSTGRES_URL_NON_POOLING")
 }
 
 enum OrderStatus {
