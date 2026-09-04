@@ -24,8 +24,7 @@ import {
 } from "@/components/ui/select";
 import { ImageField } from "@/components/admin/ImageField";
 import { QuickCategoryDialog } from "@/components/admin/QuickCategoryDialog";
-import { QuickTagDialog } from "@/components/admin/QuickTagDialog";
-import type { Category, Product, Tag } from "@/components/admin/types";
+import type { Category, Product } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
 const slugify = (value: string) =>
@@ -57,15 +56,12 @@ export function QuickProductDialog({
   const [cost, setCost] = React.useState("");
   const [stockQuantity, setStockQuantity] = React.useState("0");
   const [imageUrl, setImageUrl] = React.useState("");
-  const [badges, setBadges] = React.useState<string[]>([]);
+  const [featured, setFeatured] = React.useState(false);
   // New figures start hidden-safe, same default the full form uses.
   const [visible, setVisible] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [quickCategoryOpen, setQuickCategoryOpen] = React.useState(false);
-  const [quickTagOpen, setQuickTagOpen] = React.useState(false);
-  const tags = useAdminResource<Tag[]>("/api/admin/tags");
-  const tagRows = tags.data ?? [];
   // Holds a category created mid-dialog until the parent's reload lands it in
   // `categories` for real — otherwise the Select would show a blank value.
   const [extraCategories, setExtraCategories] = React.useState<Category[]>([]);
@@ -88,7 +84,7 @@ export function QuickProductDialog({
     setCost("");
     setStockQuantity("0");
     setImageUrl("");
-    setBadges([]);
+    setFeatured(false);
     setVisible(false);
     setExtraCategories([]);
     setError(null);
@@ -108,7 +104,7 @@ export function QuickProductDialog({
         stockQuantity: Number(stockQuantity || 0),
         categoryId,
         visible,
-        badges,
+        featured,
       };
       // The route validates imageUrl as a URL, so only send it when it is one.
       if (imageUrl.trim()) payload.imageUrl = imageUrl.trim();
@@ -249,51 +245,16 @@ export function QuickProductDialog({
 
           <ImageField id="quick-product-image" label="Image" value={imageUrl} onChange={setImageUrl} />
 
-          <div className="grid gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label>Badges</Label>
-              <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setQuickTagOpen(true)}>
-                <Plus className="size-3.5" /> New badge
-              </Button>
-            </div>
-            {tags.error ? (
-              <p className="text-xs text-destructive">Could not load tags ({tags.error}).</p>
-            ) : tags.loading ? (
-              <p className="text-xs text-muted-foreground">Loading tags…</p>
-            ) : tagRows.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No tags exist yet — use &quot;New badge&quot; above or create them on the Tags page.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {tagRows.map((tag) => {
-                  const checked = badges.includes(tag.code);
-                  return (
-                    <label
-                      key={tag.id}
-                      className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                        checked
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-input text-muted-foreground hover:bg-accent"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) =>
-                          setBadges((current) =>
-                            event.target.checked ? [...current, tag.code] : current.filter((code) => code !== tag.code),
-                          )
-                        }
-                        className="size-3.5 accent-[hsl(var(--primary))]"
-                      />
-                      {tag.label}
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Featured replaces the badge picker — see ProductDialog. */}
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={(event) => setFeatured(event.target.checked)}
+              className="size-4 accent-[hsl(var(--primary))]"
+            />
+            Show in Featured drops
+          </label>
 
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -328,14 +289,6 @@ export function QuickProductDialog({
           setExtraCategories((current) => [...current, category]);
           setCategoryId(category.id);
           onCategoryCreated?.();
-        }}
-      />
-      <QuickTagDialog
-        open={quickTagOpen}
-        onOpenChange={setQuickTagOpen}
-        onCreated={async (tag) => {
-          await tags.reload();
-          setBadges((current) => [...current, tag.code]);
         }}
       />
     </Dialog>

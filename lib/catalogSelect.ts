@@ -26,7 +26,7 @@ export const publicProductSelect = {
   character: true,
   edition: true,
   releaseDate: true,
-  badges: true,
+  featured: true,
   characterStory: true,
   funFacts: true,
   // The storefront's sitemap uses this for <lastmod>, and search engines lean

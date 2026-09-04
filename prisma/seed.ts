@@ -38,7 +38,7 @@ type Seed = {
   character: string;
   edition: string;
   releaseDate: string;
-  badges: string[];
+  featured: boolean;
   characterStory: string;
   funFacts: string[];
   imageUrl: string;
@@ -59,7 +59,7 @@ const PRODUCTS: Seed[] = [
     character: "Tanjiro Kamado",
     edition: "Standard",
     releaseDate: "2026-06-01",
-    badges: ["NEW", "FAN_FAVORITE"],
+    featured: true,
     characterStory:
       "Tanjiro Kamado joins the Demon Slayer Corps after his family is attacked and his sister Nezuko is turned into a demon. He fights with Water Breathing forms and, later, the Hinokami Kagura passed down through his family — and he is known as much for his kindness toward the demons he faces as for his blade.",
     funFacts: [
@@ -82,7 +82,7 @@ const PRODUCTS: Seed[] = [
     character: "Goku",
     edition: "Standard",
     releaseDate: "2026-06-01",
-    badges: ["NEW"],
+    featured: true,
     characterStory:
       "Goku is the Saiyan raised on Earth who keeps looking for a stronger opponent than the last one. This sculpt catches him in his Super Saiyan form, gi already torn from the fight that got him there.",
     funFacts: ["Sculpted in the Super Saiyan form from the Frieza arc", "Battle-damage on the gi is moulded, not printed", "Hand-painted golden hair with a two-tone shadow wash"],
@@ -101,7 +101,7 @@ const PRODUCTS: Seed[] = [
     character: "Shotaro Kaneda",
     edition: "Chase",
     releaseDate: "2026-05-02",
-    badges: ["LIMITED", "FAN_FAVORITE"],
+    featured: true,
     characterStory:
       "Kaneda leads a biker gang through Neo-Tokyo and spends most of the story chasing after his friend Tetsuo. The bike is as famous as he is — arguably more so.",
     funFacts: ["Bike carries the film's original sponsor decals", "Includes the removable laser rifle", "Kaneda's jacket is a separate soft-goods piece"],
@@ -120,7 +120,7 @@ const PRODUCTS: Seed[] = [
     character: "AV-98 Ingram",
     edition: "Standard",
     releaseDate: "2026-03-10",
-    badges: ["NEW"],
+    featured: true,
     characterStory:
       "The Ingram is the patrol labor issued to Special Vehicles Section 2 — a police mecha that spends as much time filling out paperwork as it does making arrests.",
     funFacts: ["Police shield and number plate are printed, not stickered", "Articulated at the shoulders, elbows, hips and knees", "Displayed here in the standard patrol livery"],
@@ -141,7 +141,7 @@ const PRODUCTS: Seed[] = [
     character: "Spider-Man",
     edition: "Deluxe",
     releaseDate: "2026-04-14",
-    badges: ["LIMITED", "FAN_FAVORITE"],
+    featured: true,
     characterStory:
       "Peter Parker's original red-and-blue costume, still the one most collectors want on the shelf. This is the standing display pose rather than a crouched web-shot.",
     funFacts: ["Classic red-and-blue costume, not a movie variant", "Webbing lines are printed over the sculpted suit texture", "Stands unaided without a base"],
@@ -160,7 +160,7 @@ const PRODUCTS: Seed[] = [
     character: "Falcon (Sam Wilson)",
     edition: "Deluxe",
     releaseDate: "2026-05-28",
-    badges: ["FAN_FAVORITE"],
+    featured: true,
     characterStory:
       "Sam Wilson flies with a harness of his own design and has been the Avengers' eyes in the air for most of his run. The classic comics costume, not the film suit.",
     funFacts: ["Classic comic-book costume colourway", "Wings are a separate moulded piece", "Comes attached to its own rubble display base"],
@@ -181,7 +181,7 @@ const PRODUCTS: Seed[] = [
     character: "Batman",
     edition: "Deluxe",
     releaseDate: "2026-08-01",
-    badges: ["PRE_ORDER"],
+    featured: true,
     characterStory: "Bruce Wayne's Batman, in the modern armoured suit with the monochrome bat emblem. Cowl, cape and utility belt all sculpted as one piece for a clean display silhouette.",
     funFacts: ["Modern armoured-suit sculpt with the black-on-grey emblem", "Cape is a solid sculpted piece, not fabric", "Utility belt is painted in a separate off-white pass"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1700825073852-1913b3886584.jpg",
@@ -199,7 +199,7 @@ const PRODUCTS: Seed[] = [
     character: "Superman",
     edition: "Standard",
     releaseDate: "2026-04-22",
-    badges: ["NEW"],
+    featured: true,
     characterStory: "Kal-El in the modern film costume — deeper blue, no trunks, and the raised red S-shield. Photographed against white so you can see the suit texture properly.",
     funFacts: ["Soft-goods cape rather than a moulded one", "Suit weave is sculpted into the surface, not printed", "Articulated at the neck, shoulders, elbows, wrists, hips, knees and ankles"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1558679908-541bcf1249ff.jpg",
@@ -219,7 +219,7 @@ const PRODUCTS: Seed[] = [
     character: "Sandtrooper",
     edition: "Standard",
     releaseDate: "2026-04-05",
-    badges: ["NEW"],
+    featured: true,
     characterStory: "Imperial sandtroopers were the ones combing Tatooine for the missing droids. The dust weathering on the armour is applied at the factory, plate by plate.",
     funFacts: ["Black pauldron denotes the squad's rank marking", "Armour weathering is sprayed and drybrushed, not printed", "Includes the standard-issue blaster rifle"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1623039902375-29258147f39e.jpg",
@@ -237,7 +237,7 @@ const PRODUCTS: Seed[] = [
     character: "Sandtrooper",
     edition: "Exclusive",
     releaseDate: "2026-07-08",
-    badges: ["LIMITED", "PRE_ORDER"],
+    featured: true,
     characterStory: "The same trooper, one rank up and one pose over: standing, pack loaded, rifle stowed. Displayed alongside the Desert Patrol figure it reads as a two-man detail.",
     funFacts: ["Squad-leader variant with the full field backpack", "Poses to pair with the Desert Patrol sandtrooper", "Exclusive to this release window"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1623039958673-08c3f4376009.jpg",
@@ -257,7 +257,7 @@ const PRODUCTS: Seed[] = [
     character: "Woody",
     edition: "Chase",
     releaseDate: "2026-08-15",
-    badges: ["PRE_ORDER", "LIMITED"],
+    featured: true,
     characterStory: "Sheriff Woody, Andy's favourite toy and the one who keeps the rest of the toy box in line. Hat is removable, as it should be.",
     funFacts: ["Removable cowboy hat", "Bendable arms and legs for posing", "Yellow plaid shirt and cow-print vest are printed fabric-effect"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1649903303524-a69737c90212.jpg",
@@ -275,7 +275,7 @@ const PRODUCTS: Seed[] = [
     character: "Ghost Minifigure",
     edition: "Deluxe",
     releaseDate: "2026-06-30",
-    badges: ["LIMITED", "FAN_FAVORITE"],
+    featured: true,
     characterStory: "The LEGO ghost has been haunting castle and Halloween sets since the 1990s, and the shroud has barely changed since. Still one of the most-traded minifigures going.",
     funFacts: ["The shroud is a separate slip-on piece", "Printed face sits under the hood", "Fits any standard minifigure body"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1690041638795-14c34f90da9a.jpg",
@@ -293,7 +293,7 @@ const PRODUCTS: Seed[] = [
     character: "Fluttershy & Friends",
     edition: "Standard",
     releaseDate: "2026-08-10",
-    badges: ["NEW"],
+    featured: true,
     characterStory: "Five of the show's best-known ponies, shrunk to chibi proportions and sat in a row. Sold as a complete set rather than blind-boxed, so you get all five.",
     funFacts: ["Sold as a complete five-figure set, no duplicates", "Each pony sits about two inches tall", "Manes and tails are moulded, not rooted hair"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1767026916692-aa8f9cd220ef.jpg",
@@ -313,7 +313,7 @@ const PRODUCTS: Seed[] = [
     character: "Hirono",
     edition: "Deluxe",
     releaseDate: "2026-05-15",
-    badges: ["LIMITED"],
+    featured: true,
     characterStory: "Hirono is Lang's designer-toy character for POP MART — a sulky boy whose whole appeal is that he never quite looks at you. This release puts him inside a shipping box, stencils and all.",
     funFacts: ["Designer art toy rather than a licensed character figure", "Cardboard costume is moulded vinyl with printed shipping marks", "Large-format release, well above blind-box scale"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1769345749373-d1407c84cdbf.jpg",
@@ -331,7 +331,7 @@ const PRODUCTS: Seed[] = [
     character: "Flight Suit Pop!",
     edition: "Standard",
     releaseDate: "2026-03-25",
-    badges: ["NEW"],
+    featured: true,
     characterStory: "We list this one honestly: it is a Pop!-format vinyl in a red mission flight suit with a microphone in hand, and we cannot confirm which licensed character it depicts. If you recognise it, tell us and we will correct the listing.",
     funFacts: ["Sold as an unattributed Pop!-format vinyl", "NASA meatball and two mission patches on the chest", "Printed floral trainers, sculpted separately from the suit"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1718254951230-dac05b0ff8b9.jpg",
@@ -349,7 +349,7 @@ const PRODUCTS: Seed[] = [
     character: "Denim Jacket Pop!",
     edition: "Standard",
     releaseDate: "2026-03-18",
-    badges: ["NEW"],
+    featured: true,
     characterStory: "Another honest listing: a Pop!-format vinyl we stock as an unattributed piece. Everyday clothes, no franchise markings, and no claim from us about who it is meant to be.",
     funFacts: ["Sold as an unattributed Pop!-format vinyl", "Patched denim jacket is painted, not soft-goods", "Stands about four inches tall"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1781543423089-dc61428dbbfa.jpg",
@@ -367,7 +367,7 @@ const PRODUCTS: Seed[] = [
     character: "Sealed pull",
     edition: "Exclusive",
     releaseDate: "2026-07-29",
-    badges: ["FAN_FAVORITE", "PRE_ORDER"],
+    featured: true,
     characterStory: "The blind-box wall is the part of the shop people photograph. You pick a numbered cell, we pull the box sealed, and neither of us knows which mini is inside until you open it.",
     funFacts: ["Current rotation includes One Piece, Marvel and Transformers minis", "Boxes are pulled sealed and never pre-sorted", "Duplicates can be traded back in store credit"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1720630351963-93567f7a746d.jpg",
@@ -385,7 +385,7 @@ const PRODUCTS: Seed[] = [
     character: "Armoured Samurai",
     edition: "Exclusive",
     releaseDate: "2026-07-20",
-    badges: ["PRE_ORDER"],
+    featured: true,
     characterStory: "Musha ningyō are the armoured warrior dolls traditionally displayed in Japan for Children's Day. This is a decorative piece rather than a character from any series — no franchise, no lore, just craft.",
     funFacts: ["Armour lacing and brocade are real textile, not moulded", "Ships on its own black lacquer display base", "Not tied to any anime or film licence"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1687865547203-f592769b9221.jpg",
@@ -403,7 +403,7 @@ const PRODUCTS: Seed[] = [
     character: "Dread Reaper",
     edition: "Exclusive",
     releaseDate: "2026-06-18",
-    badges: ["LIMITED", "FAN_FAVORITE"],
+    featured: true,
     characterStory: "A studio original rather than a licensed character — a horned reaper knight cast in resin, drybrushed grey over black, with the only colour in the eyes and the blade.",
     funFacts: ["Original studio sculpt, no franchise tie", "Eyes and scythe edge are the only painted colour", "Chainmail texture is sculpted into the master, not a decal"],
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1753492644538-53ee68625f6d.jpg",
@@ -464,18 +464,7 @@ const COLLECTIONS: CollectionSeed[] = [
    existing product looking identical once the storefront reads tags from the
    database instead. Rotation is not here on purpose: it is a per-sticker
    styling choice the storefront makes, not a property of the tag. */
-const TAGS = [
-  { code: "NEW", label: "just landed", tone: "yellow" },
-  { code: "LIMITED", label: "limited run", tone: "orange" },
-  { code: "PRE_ORDER", label: "pre-order", tone: "blue" },
-  { code: "FAN_FAVORITE", label: "fan favourite", tone: "peach" },
-];
-
 async function main() {
-  for (const tag of TAGS) {
-    await prisma.tag.upsert({ where: { code: tag.code }, update: tag, create: tag });
-  }
-
   const categoryIds = new Map<CategoryKey, string>();
   for (const category of CATEGORIES) {
     const data = { name: category.name, slug: category.slug, description: category.description };

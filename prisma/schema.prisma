@@ -74,7 +74,12 @@ model Product {
   character String?
   edition String?
   releaseDate DateTime?
-  badges String[] @default([])
+  /* Whether this figure appears in the homepage's Featured drops row.
+     Replaced a `badges String[]` pointing at a Tag vocabulary: one product in
+     508 ever carried a badge, so the row it was meant to fill was actually
+     populated by an arbitrary stride through the catalogue. A checkbox the
+     shop owner ticks is both simpler and the thing they were reaching for. */
+  featured Boolean @default(false)
   characterStory String?
   funFacts String[] @default([])
   wishlistItems WishlistItem[]
@@ -86,20 +91,6 @@ model Product {
   adjustments InventoryAdjustment[]
   collectionItems CollectionItem[]
   reviews Review[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/* The vocabulary behind Product.badges. `code` is the string actually stored
-   in that array; label/tone are what the storefront prints. Deliberately not a
-   relation: a product keeps its badge codes even if a tag row is later
-   deleted, and the storefront falls back to a generic rendering for a code it
-   can no longer resolve. */
-model Tag {
-  id String @id @default(cuid())
-  code String @unique
-  label String
-  tone String @default("orange")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

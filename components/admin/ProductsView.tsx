@@ -198,9 +198,14 @@ export function ProductsView() {
       header: "Status",
       sortValue: (row) => (row.visible ? "visible" : "hidden"),
       cell: (row) => (
-        <Badge variant={row.visible ? "success" : "outline"}>
-          {row.visible ? "Visible" : "Hidden"}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant={row.visible ? "success" : "outline"}>
+            {row.visible ? "Visible" : "Hidden"}
+          </Badge>
+          {/* So the homepage row can be audited from the list, without opening
+              each figure to find out which ones are in it. */}
+          {row.featured && <Badge variant="secondary">Featured</Badge>}
+        </div>
       ),
     },
     {

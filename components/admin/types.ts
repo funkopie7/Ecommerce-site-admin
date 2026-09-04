@@ -28,15 +28,6 @@ export type Category = {
   _count?: { products: number };
 };
 
-/** The badge vocabulary. `code` is what lands in Product.badges. */
-export type Tag = {
-  id: string;
-  code: string;
-  label: string;
-  tone: string;
-  updatedAt: string;
-};
-
 export type Product = {
   id: string;
   sku: string;
@@ -54,7 +45,7 @@ export type Product = {
   character: string | null;
   edition: string | null;
   releaseDate: string | null;
-  badges: string[];
+  featured: boolean;
   categoryId: string;
   category: { id: string; name: string };
   updatedAt: string;

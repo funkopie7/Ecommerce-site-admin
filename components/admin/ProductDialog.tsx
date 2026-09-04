@@ -24,8 +24,7 @@ import {
 } from "@/components/ui/select";
 import { ImageField } from "@/components/admin/ImageField";
 import { QuickCategoryDialog } from "@/components/admin/QuickCategoryDialog";
-import { QuickTagDialog } from "@/components/admin/QuickTagDialog";
-import type { Category, Product, Tag } from "@/components/admin/types";
+import type { Category, Product } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
 const slugify = (value: string) =>
@@ -47,7 +46,7 @@ type Draft = {
   imageUrl: string;
   hoverImageUrl: string;
   visible: boolean;
-  badges: string[];
+  featured: boolean;
 };
 
 function draftFrom(product: Product | null, categories: Category[]): Draft {
@@ -67,7 +66,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       // New figures start hidden-safe (see the dialog copy below) — check the
       // box to launch immediately.
       visible: false,
-      badges: [],
+      featured: false,
     };
   }
   return {
@@ -83,7 +82,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
     imageUrl: product.imageUrl ?? "",
     hoverImageUrl: product.hoverImageUrl ?? "",
     visible: product.visible,
-    badges: product.badges ?? [],
+    featured: product.featured ?? false,
   };
 }
 
@@ -93,8 +92,9 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
  * about the catalog-only fields (franchise, character, edition, release date)
  * that the schema stores but those routes do not yet take.
  *
- * Badges are the exception: they are picked here from the real Tag list, so
- * whatever an admin creates on /tags is immediately assignable to a figure.
+ * The Featured checkbox is the exception: it is a plain boolean on the
+ * product, and it decides whether the figure shows in the homepage's
+ * Featured drops row.
  */
 export function ProductDialog({
   open,
@@ -115,10 +115,7 @@ export function ProductDialog({
   const [draft, setDraft] = React.useState<Draft>(() => draftFrom(product, categories));
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
-  const tags = useAdminResource<Tag[]>("/api/admin/tags");
-  const tagRows = tags.data ?? [];
   const [quickCategoryOpen, setQuickCategoryOpen] = React.useState(false);
-  const [quickTagOpen, setQuickTagOpen] = React.useState(false);
   // Holds a category created mid-dialog until the parent's reload lands it in
   // `categories` for real — otherwise the Select would show a blank value.
   const [extraCategories, setExtraCategories] = React.useState<Category[]>([]);
@@ -159,7 +156,7 @@ export function ProductDialog({
       stockQuantity: Number(draft.stockQuantity || 0),
       categoryId: draft.categoryId,
       visible: draft.visible,
-      badges: draft.badges,
+      featured: draft.featured,
     };
     if (draft.compareAtPrice.trim()) payload.compareAtPrice = Math.round(Number(draft.compareAtPrice) * 100);
     else if (product) payload.compareAtPrice = null;
@@ -355,64 +352,25 @@ export function ProductDialog({
             hint="Shown on crossfade when a shopper hovers the card — optional."
           />
 
-          {/* The stickers this figure wears on the storefront. The list is the
-              real Tag table, not a fixed set — anything created on /tags shows
-              up here. A code already on the product that no longer has a tag
-              row is still offered, so editing a figure never silently drops
-              a badge it was carrying. */}
-          <div className="grid gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label>Badges</Label>
-              <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setQuickTagOpen(true)}>
-                <Plus className="size-3.5" /> New badge
-              </Button>
-            </div>
-            {tags.error ? (
-              <p className="text-xs text-destructive">Could not load tags ({tags.error}).</p>
-            ) : tags.loading ? (
-              <p className="text-xs text-muted-foreground">Loading tags…</p>
-            ) : tagRows.length === 0 && draft.badges.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No tags exist yet — use &quot;New badge&quot; above or create them on the Tags page.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {[
-                  ...tagRows,
-                  ...draft.badges
-                    .filter((code) => !tagRows.some((tag) => tag.code === code))
-                    .map((code) => ({ id: code, code, label: `${code} (deleted tag)`, tone: "" })),
-                ].map((tag) => {
-                  const checked = draft.badges.includes(tag.code);
-                  return (
-                    <label
-                      key={tag.id}
-                      className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                        checked
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-input text-muted-foreground hover:bg-accent"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) =>
-                          set(
-                            "badges",
-                            event.target.checked
-                              ? [...draft.badges, tag.code]
-                              : draft.badges.filter((code) => code !== tag.code),
-                          )
-                        }
-                        className="size-3.5 accent-[hsl(var(--primary))]"
-                      />
-                      {tag.label}
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Replaced the badge picker. Badges drove a "Featured drops" row on
+              the homepage, but one product in 508 ever carried one, so that
+              row was really filled by an arbitrary walk through the catalogue.
+              This is the control that was actually wanted: tick a figure and
+              it appears there. */}
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-input p-3 transition-colors hover:bg-accent">
+            <input
+              type="checkbox"
+              checked={draft.featured}
+              onChange={(event) => set("featured", event.target.checked)}
+              className="mt-0.5 size-4 accent-[hsl(var(--primary))]"
+            />
+            <span className="grid gap-0.5">
+              <span className="text-sm font-medium text-foreground">Show in Featured drops</span>
+              <span className="text-xs text-muted-foreground">
+                Puts this figure in the looping row on the homepage.
+              </span>
+            </span>
+          </label>
 
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -454,14 +412,6 @@ export function ProductDialog({
           setExtraCategories((current) => [...current, category]);
           set("categoryId", category.id);
           onCategoryCreated?.();
-        }}
-      />
-      <QuickTagDialog
-        open={quickTagOpen}
-        onOpenChange={setQuickTagOpen}
-        onCreated={async (tag) => {
-          await tags.reload();
-          set("badges", [...draft.badges, tag.code]);
         }}
       />
     </Dialog>

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { revalidateStorefront } from "@/lib/revalidateStorefront";
 
 /* compareAtPrice is nullable (not just optional): the admin UI clears it
    explicitly when a bundle's discount is turned off, and omitted vs null
@@ -17,16 +18,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!parsed.success) return error(parsed.error.issues[0].message, 400);
   const { items, ...data } = parsed.data;
   try {
-    return NextResponse.json(await prisma.$transaction(async (tx) => {
+    const collection = await prisma.$transaction(async (tx) => {
       await tx.collection.update({ where: { id }, data });
       if (items) { await tx.collectionItem.deleteMany({ where: { collectionId: id } }); await tx.collectionItem.createMany({ data: items.map((item) => ({ collectionId: id, productId: item.productId, quantity: item.quantity })) }); }
       return tx.collection.findUniqueOrThrow({ where: { id }, include: { items: { include: { product: true } } } });
-    }));
+    });
+    revalidateStorefront();
+    return NextResponse.json(collection);
   } catch { return error("Collection not found or name/slug already in use", 409); }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin(request))) return error("Administrator access required", 401);
   const { id } = await params;
-  try { await prisma.collection.delete({ where: { id } }); return NextResponse.json({ ok: true }); } catch { return error("Collection not found", 409); }
+  try { await prisma.collection.delete({ where: { id } }); revalidateStorefront(); return NextResponse.json({ ok: true }); } catch { return error("Collection not found", 409); }
 }

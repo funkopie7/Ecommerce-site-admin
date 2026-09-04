@@ -3,8 +3,9 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { revalidateStorefront } from "@/lib/revalidateStorefront";
 
-const productInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().min(10), price: z.number().int().nonnegative(), compareAtPrice: z.number().int().nonnegative().optional(), cost: z.number().int().nonnegative(), stockQuantity: z.number().int().nonnegative(), categoryId: z.string(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().optional(), visible: z.boolean().default(true), badges: z.array(z.string()).optional() });
+const productInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().min(10), price: z.number().int().nonnegative(), compareAtPrice: z.number().int().nonnegative().optional(), cost: z.number().int().nonnegative(), stockQuantity: z.number().int().nonnegative(), categoryId: z.string(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().optional(), visible: z.boolean().default(true), featured: z.boolean().optional() });
 
 /**
  * SKU is generated, not typed: the product's first word, upper-cased, plus
@@ -34,7 +35,9 @@ export async function POST(request: NextRequest) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const sku = await nextSku(parsed.data.name);
     try {
-      return NextResponse.json(await prisma.product.create({ data: { ...parsed.data, sku } }), { status: 201 });
+      const created = await prisma.product.create({ data: { ...parsed.data, sku } });
+      revalidateStorefront();
+      return NextResponse.json(created, { status: 201 });
     } catch (cause) {
       const collided = cause instanceof Prisma.PrismaClientKnownRequestError && cause.code === "P2002";
       if (collided && (cause.meta?.target as string[] | undefined)?.includes("sku")) continue; // another create just took this number — try the next one
