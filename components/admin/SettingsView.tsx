@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Blend, Box, Palette } from "lucide-react";
+import { Blend, Box, Palette, Type } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,35 @@ import { Label } from "@/components/ui/label";
 import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
-type Settings = { accentColor: string; secondaryColor: string | null; heroModelUrl: string | null; heroModelName: string | null };
+type BoxLabels = {
+  heroBoxLine: string;
+  heroBoxNumber: string;
+  heroBoxBanner: string;
+  heroBoxName: string;
+  heroBoxSubtitle: string;
+};
+
+type Settings = { accentColor: string; secondaryColor: string | null; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
+
+/* The box face is drawn in code, so these are the only words on it. Order
+   here matches the order they appear on the packaging, top to bottom, which
+   is the only arrangement that lets someone check their work against the
+   preview without hunting. */
+const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
+  { key: "heroBoxLine", label: "POP! line", hint: "Printed under the POP! badge — Animation, Marvel, Games…" },
+  { key: "heroBoxNumber", label: "Figure number", hint: "Top right corner." },
+  { key: "heroBoxBanner", label: "Banner", hint: "The franchise strip across the top." },
+  { key: "heroBoxName", label: "Nameplate", hint: "The character name at the bottom." },
+  { key: "heroBoxSubtitle", label: "Nameplate subtitle", hint: "The smaller line under the name. Leave blank to omit it." },
+];
+
+const DEFAULT_BOX: BoxLabels = {
+  heroBoxLine: "ANIMATION",
+  heroBoxNumber: "1000",
+  heroBoxBanner: "DEMON SLAYER",
+  heroBoxName: "TANJIRO",
+  heroBoxSubtitle: "WITH NOODLES",
+};
 
 const DEFAULT_ACCENT = "#E8622A";
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -49,6 +77,7 @@ export function SettingsView() {
   const settings = useAdminResource<Settings>("/api/admin/settings");
   const [accent, setAccent] = React.useState(DEFAULT_ACCENT);
   const [secondary, setSecondary] = React.useState<string | null>(null);
+  const [box, setBox] = React.useState<BoxLabels>(DEFAULT_BOX);
   const [model, setModel] = React.useState<{ url: string | null; name: string | null }>({ url: null, name: null });
   const [notice, setNotice] = React.useState<string | null>(null);
   const [failure, setFailure] = React.useState<string | null>(null);
@@ -59,6 +88,13 @@ export function SettingsView() {
     if (!settings.data) return;
     setAccent(settings.data.accentColor);
     setSecondary(settings.data.secondaryColor);
+    setBox({
+      heroBoxLine: settings.data.heroBoxLine,
+      heroBoxNumber: settings.data.heroBoxNumber,
+      heroBoxBanner: settings.data.heroBoxBanner,
+      heroBoxName: settings.data.heroBoxName,
+      heroBoxSubtitle: settings.data.heroBoxSubtitle,
+    });
     setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName });
   }, [settings.data]);
 
@@ -67,7 +103,8 @@ export function SettingsView() {
     Boolean(settings.data) &&
     (accent !== settings.data!.accentColor ||
       secondary !== settings.data!.secondaryColor ||
-      model.url !== settings.data!.heroModelUrl);
+      model.url !== settings.data!.heroModelUrl ||
+      BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]));
 
   /* Debounced so dragging the colour wheel doesn't reload the iframe on every
      pixel of movement — the picker fires continuously while the pointer is
@@ -90,7 +127,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, heroModelUrl: model.url, heroModelName: model.name }),
+        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, heroModelUrl: model.url, heroModelName: model.name, ...box }),
       });
       setNotice("Saved — the storefront updates within a few seconds.");
       await settings.reload();
@@ -349,6 +386,36 @@ export function SettingsView() {
                 Go back to the built-in model
               </Button>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex-row items-start gap-3 space-y-0">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+              <Type className="size-4" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Box artwork</CardTitle>
+              <CardDescription>
+                The words printed on the POP! box behind the 3D figure. The artwork is drawn in
+                code, so these are the only text on it — change the model and these need changing
+                too, or the new figure stands in the old one&apos;s packaging.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {BOX_FIELDS.map((field) => (
+              <div key={field.key} className="grid gap-1.5">
+                <Label htmlFor={`box-${field.key}`}>{field.label}</Label>
+                <Input
+                  id={`box-${field.key}`}
+                  value={box[field.key]}
+                  maxLength={40}
+                  onChange={(event) => setBox((current) => ({ ...current, [field.key]: event.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground">{field.hint}</p>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
