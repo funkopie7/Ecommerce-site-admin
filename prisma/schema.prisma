@@ -165,7 +165,12 @@ model Customer {
   id String @id @default(cuid())
   name String
   email String @unique
-  passwordHash String
+  /* Optional, because an account created through Google has no password to
+     hash. Everything that compares a password must therefore check this
+     exists first — a null hash means "this account signs in with Google",
+     not "any password works". */
+  passwordHash String?
+  googleId String? @unique
   phone String?
   imageUrl String?
   addresses Address[]
