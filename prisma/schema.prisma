@@ -240,6 +240,12 @@ model Order {
   customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerName String?
   customerPhone String?
+  // Optional even for a walk-in: someone buying over the counter often won't
+  // give an address, and the sale must not depend on one. When it is there,
+  // it is the only way to send them a receipt — a walk-in has no account to
+  // read one from. sendOrderConfirmation falls back to this when there is no
+  // linked customer.
+  customerEmail String?
   status OrderStatus @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
   subtotal Int

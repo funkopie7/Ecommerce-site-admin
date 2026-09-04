@@ -49,6 +49,7 @@ export function ManualOrderDialog({
   const [customer, setCustomer] = React.useState<CustomerHit | null>(null);
   const [walkinName, setWalkinName] = React.useState("");
   const [walkinPhone, setWalkinPhone] = React.useState("");
+  const [walkinEmail, setWalkinEmail] = React.useState("");
   const [items, setItems] = React.useState<Record<string, number>>({});
   const [amountPaid, setAmountPaid] = React.useState("");
   const [fullyPaid, setFullyPaid] = React.useState(true);
@@ -64,6 +65,7 @@ export function ManualOrderDialog({
     setCustomer(null);
     setWalkinName("");
     setWalkinPhone("");
+    setWalkinEmail("");
     setItems({});
     setAmountPaid("");
     setFullyPaid(true);
@@ -109,7 +111,7 @@ export function ManualOrderDialog({
         status,
       };
       if (mode === "existing") payload.customerId = customer!.id;
-      else { payload.customerName = walkinName.trim(); payload.customerPhone = walkinPhone.trim(); }
+      else { payload.customerName = walkinName.trim(); payload.customerPhone = walkinPhone.trim(); payload.customerEmail = walkinEmail.trim(); }
 
       const created = await adminFetch<Order>("/api/admin/orders", { method: "POST", body: JSON.stringify(payload) });
       onCreated(created);
@@ -150,6 +152,24 @@ export function ManualOrderDialog({
               <div className="grid gap-1.5">
                 <Label htmlFor="manual-order-phone">Phone <span className="text-destructive">*</span></Label>
                 <Input id="manual-order-phone" required minLength={6} value={walkinPhone} onChange={(event) => setWalkinPhone(event.target.value)} placeholder="9876543210" />
+              </div>
+              {/* Spans both columns: an address is longer than a phone number,
+                  and it is the one field here that does something after the
+                  sale rather than just recording it. */}
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label htmlFor="manual-order-email">Email <span className="text-muted-foreground font-normal">optional</span></Label>
+                <Input
+                  id="manual-order-email"
+                  type="email"
+                  value={walkinEmail}
+                  onChange={(event) => setWalkinEmail(event.target.value)}
+                  placeholder="buyer@example.com"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {walkinEmail.trim()
+                    ? "An order confirmation will be emailed to this address."
+                    : "Add one to email this customer their order confirmation. Leave blank for a plain counter sale."}
+                </p>
               </div>
             </div>
           ) : (

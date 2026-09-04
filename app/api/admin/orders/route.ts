@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { sendOrderConfirmation } from "@/lib/email";
 
 const update = z.object({ orderId: z.string(), status: z.enum(["PENDING", "CONFIRMED", "PACKED", "SHIPPED", "DELIVERED", "CANCELLED"]), carrier: z.string().optional(), trackingCode: z.string().optional(), deliveryNotes: z.string().optional() }).refine((value) => value.status !== "SHIPPED" || Boolean(value.trackingCode), "Tracking code is required when shipping an order");
 
@@ -10,6 +11,10 @@ const manualOrderInput = z
     customerId: z.string().optional(),
     customerName: z.string().min(2).optional(),
     customerPhone: z.string().min(6).optional(),
+    /* Optional, and emptiable: the dialog sends "" when the field is left
+       blank, which .or(z.literal("")) accepts and the handler turns into null
+       rather than storing an empty string that later reads as an address. */
+    customerEmail: z.string().email("Enter a valid email address, or leave it blank").optional().or(z.literal("")),
     items: z.array(z.object({ productId: z.string(), quantity: z.number().int().positive(), unitPrice: z.number().int().nonnegative().optional() })).min(1),
     amountPaid: z.number().int().nonnegative().default(0),
     status: z.enum(["PENDING", "CONFIRMED", "PACKED", "SHIPPED", "DELIVERED", "CANCELLED"]).default("CONFIRMED"),
@@ -52,7 +57,7 @@ export async function POST(request: NextRequest) {
   if (!(await requireAdmin(request))) return error("Administrator access required", 401);
   const parsed = manualOrderInput.safeParse(await request.json());
   if (!parsed.success) return error(parsed.error.issues[0].message, 400);
-  const { customerId, customerName, customerPhone, items, amountPaid, status, deliveryNotes } = parsed.data;
+  const { customerId, customerName, customerPhone, customerEmail, items, amountPaid, status, deliveryNotes } = parsed.data;
 
   try {
     const order = await prisma.$transaction(async (tx) => {
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
       const created = await tx.order.create({
         data: {
           number: `MO-${Date.now().toString().slice(-8)}`,
-          ...(customerId ? { customerId } : { customerName, customerPhone }),
+          ...(customerId ? { customerId } : { customerName, customerPhone, customerEmail: customerEmail || null }),
           status,
           paymentStatus: paymentStatusFor(amountPaid, subtotal),
           subtotal,
@@ -96,6 +101,13 @@ export async function POST(request: NextRequest) {
       for (const item of items) await tx.product.update({ where: { id: item.productId }, data: { stockQuantity: { decrement: item.quantity } } });
       return created;
     });
+
+    /* Outside the transaction, and best-effort: a counter sale is already
+       done and paid by the time this runs, so a mail failure must not turn
+       into a failed order. sendOrderConfirmation is a no-op when the order
+       carries no email at all, which is the normal case for a walk-in who
+       didn't give one. */
+    await sendOrderConfirmation(order.id);
     return NextResponse.json(order, { status: 201 });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : "";

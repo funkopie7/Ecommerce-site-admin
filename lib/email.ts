@@ -76,7 +76,11 @@ export async function sendOrderConfirmation(orderId: string): Promise<boolean> {
       where: { id: orderId },
       include: { customer: true, items: { include: { product: true, collection: true } } },
     });
-    const to = order?.customer?.email;
+    /* A walk-in sale has no linked account, so its receipt address lives on
+       the order itself. Registered customer first — that address is verified
+       by sign-in, where the typed-in one is whatever was read out at the
+       counter. */
+    const to = order?.customer?.email ?? order?.customerEmail;
     if (!order || !to) {
       console.warn("[email] order confirmation skipped — no customer email for", orderId);
       return false;

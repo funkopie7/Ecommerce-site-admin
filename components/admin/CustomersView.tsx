@@ -18,13 +18,17 @@ import { orderStatusVariant } from "@/components/admin/orderStatus";
 import type { Order } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
+/* Either a registered account or a walk-in reconstructed from the orders that
+   named them — see /api/admin/customers. `kind` is what separates the two, and
+   a walk-in has no account, so email can be missing. */
 type Customer = {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   createdAt: string;
-  _count: { orders: number };
+  orders: number;
+  kind: "account" | "walkin";
 };
 
 const formatDate = (value: string) =>
@@ -33,11 +37,14 @@ const formatDate = (value: string) =>
 export function CustomersView() {
   const customers = useAdminResource<Customer[]>("/api/admin/customers");
   // Orders don't carry a customer id (only name/email), so the detail dialog
-  // matches on email — unique on the Customer model, unlike name.
+  // matches registered customers on email — unique on the Customer model,
+  // unlike name — and walk-ins on the phone recorded against the order.
   const orders = useAdminResource<Order[]>("/api/admin/orders");
   const [viewing, setViewing] = React.useState<Customer | null>(null);
 
   const rows = customers.data ?? [];
+  const walkins = rows.filter((row) => row.kind === "walkin").length;
+  const accounts = rows.length - walkins;
 
   const columns: Column<Customer>[] = [
     {
@@ -46,8 +53,15 @@ export function CustomersView() {
       sortValue: (row) => row.name,
       cell: (row) => (
         <div className="min-w-0">
-          <p className="truncate font-medium text-foreground">{row.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{row.email}</p>
+          <p className="truncate font-medium text-foreground">
+            {row.name}
+            {row.kind === "walkin" && (
+              <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-normal uppercase tracking-wide text-muted-foreground">
+                Walk-in
+              </span>
+            )}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{row.email ?? "No email on file"}</p>
         </div>
       ),
     },
@@ -60,14 +74,14 @@ export function CustomersView() {
     {
       key: "orders",
       header: "Orders",
-      sortValue: (row) => row._count.orders,
+      sortValue: (row) => row.orders,
       headClassName: "text-right",
       className: "text-right tabular-nums",
-      cell: (row) => row._count.orders,
+      cell: (row) => row.orders,
     },
     {
       key: "since",
-      header: "Member since",
+      header: "First seen",
       sortValue: (row) => new Date(row.createdAt).getTime(),
       cell: (row) => <span className="text-sm text-muted-foreground">{formatDate(row.createdAt)}</span>,
     },
@@ -84,11 +98,28 @@ export function CustomersView() {
     },
   ];
 
-  const viewingOrders = viewing ? (orders.data ?? []).filter((order) => order.customer?.email === viewing.email) : [];
+  /* A walk-in has no account for an order to point at, so its orders can only
+     be found the way the roster itself groups them — by the phone recorded on
+     the order, falling back to the name. Matching those by email would find
+     nothing, since that is exactly the field a walk-in usually lacks. */
+  const viewingOrders = !viewing
+    ? []
+    : (orders.data ?? []).filter((order) =>
+        viewing.kind === "walkin"
+          ? !order.customer &&
+            (viewing.phone
+              ? order.customerPhone === viewing.phone
+              : (order.customerName ?? "").toLowerCase() === viewing.name.toLowerCase())
+          : Boolean(viewing.email) && order.customer?.email === viewing.email,
+      );
 
   return (
     <div className="mx-auto w-full max-w-[1220px]">
-      <PageHeader eyebrow="Sales" title="Customers" description={`${rows.length} registered ${rows.length === 1 ? "account" : "accounts"}.`} />
+      <PageHeader
+        eyebrow="Sales"
+        title="Customers"
+        description={`${accounts} registered ${accounts === 1 ? "account" : "accounts"}${walkins > 0 ? ` · ${walkins} walk-${walkins === 1 ? "in" : "ins"}` : ""}.`}
+      />
 
       {customers.error && <ErrorState message={`Could not load customers (${customers.error}).`} />}
 
@@ -98,9 +129,9 @@ export function CustomersView() {
           columns={columns}
           getRowId={(row) => row.id}
           loading={customers.loading}
-          searchIn={(row) => `${row.name} ${row.email} ${row.phone ?? ""}`}
+          searchIn={(row) => `${row.name} ${row.email ?? ""} ${row.phone ?? ""} ${row.kind === "walkin" ? "walk-in walkin" : "account registered"}`}
           searchPlaceholder="Find a customer"
-          emptyMessage="No registered customers yet."
+          emptyMessage="No customers yet."
         />
       )}
 
@@ -109,8 +140,8 @@ export function CustomersView() {
           <DialogHeader>
             <DialogTitle>{viewing?.name}</DialogTitle>
             <DialogDescription>
-              {viewing?.email}
-              {viewing?.phone ? ` · ${viewing.phone}` : ""} · Member since {viewing ? formatDate(viewing.createdAt) : ""}
+              {viewing?.email ?? "No email on file"}
+              {viewing?.phone ? ` · ${viewing.phone}` : ""} · {viewing?.kind === "walkin" ? "First bought" : "Member since"} {viewing ? formatDate(viewing.createdAt) : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[50vh] space-y-2 overflow-y-auto">
