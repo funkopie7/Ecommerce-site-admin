@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageField } from "@/components/admin/ImageField";
+import { GalleryField } from "@/components/admin/GalleryField";
 import { QuickCategoryDialog } from "@/components/admin/QuickCategoryDialog";
 import type { Category, Product } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
@@ -47,6 +48,7 @@ type Draft = {
   hoverImageUrl: string;
   visible: boolean;
   featured: boolean;
+  images: string[];
 };
 
 function draftFrom(product: Product | null, categories: Category[]): Draft {
@@ -67,6 +69,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       // box to launch immediately.
       visible: false,
       featured: false,
+      images: [],
     };
   }
   return {
@@ -83,6 +86,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
     hoverImageUrl: product.hoverImageUrl ?? "",
     visible: product.visible,
     featured: product.featured ?? false,
+    images: product.images ?? [],
   };
 }
 
@@ -157,6 +161,7 @@ export function ProductDialog({
       categoryId: draft.categoryId,
       visible: draft.visible,
       featured: draft.featured,
+      images: draft.images,
     };
     if (draft.compareAtPrice.trim()) payload.compareAtPrice = Math.round(Number(draft.compareAtPrice) * 100);
     else if (product) payload.compareAtPrice = null;
@@ -351,6 +356,8 @@ export function ProductDialog({
             onChange={(url) => set("hoverImageUrl", url)}
             hint="Shown on crossfade when a shopper hovers the card — optional."
           />
+
+          <GalleryField value={draft.images} onChange={(images) => set("images", images)} />
 
           {/* Replaced the badge picker. Badges drove a "Featured drops" row on
               the homepage, but one product in 508 ever carried one, so that

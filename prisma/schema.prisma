@@ -400,3 +400,23 @@ model Message {
   readByAdmin Boolean @default(false)
   createdAt DateTime @default(now())
 }
+
+/* Store-wide settings the shop owner can change without a deploy.
+
+   A single row, pinned to id "store" — there is one shop, and a settings
+   table that can hold two of them is a table that will eventually hold two of
+   them and then have to decide which is real. Reads upsert it into existence,
+   so a fresh database needs no seeding step.
+
+   `accentColor` is the storefront's one brand colour (the orange). It is
+   injected as a CSS variable at the root, so every rule already written
+   against var(--orange) follows it. `heroModelUrl` is the .glb standing in
+   the homepage hero — bundled as a static file until now, which meant
+   swapping the figure took a code change and a deploy. */
+model StoreSettings {
+  id String @id @default("store")
+  accentColor String @default("#E8622A")
+  heroModelUrl String?
+  heroModelName String?
+  updatedAt DateTime @updatedAt
+}

@@ -46,6 +46,7 @@ export type Product = {
   edition: string | null;
   releaseDate: string | null;
   featured: boolean;
+  images: string[];
   categoryId: string;
   category: { id: string; name: string };
   updatedAt: string;
