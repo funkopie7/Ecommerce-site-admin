@@ -1,6 +1,12 @@
 // app/api/admin/uploads/chat/route.test.ts
 import { expect, it, vi } from "vitest";
-vi.mock("sharp", () => ({ default: () => ({ webp: () => ({ toBuffer: async () => Buffer.from("fake-webp-bytes") }) }) }));
+/* The pipeline chains resize().webp().toBuffer(), so the mock has to be
+   chainable too — a stub missing resize() fails inside the route and surfaces
+   as a 500 rather than as the missing method it is. */
+vi.mock("sharp", () => {
+  const chain = { resize: () => chain, webp: () => chain, toBuffer: async () => Buffer.from("fake-webp-bytes") };
+  return { default: () => chain };
+});
 const { uploadImage } = vi.hoisted(() => ({ uploadImage: vi.fn(async (_b: Buffer, name: string, _t: string, bucket: string) => `https://example.supabase.co/storage/v1/object/public/${bucket}/${name}`) }));
 vi.mock("@/lib/uploads", () => ({ uploadImage, PRODUCT_BUCKET: "product-images", CHAT_BUCKET: "chat-images" }));
 import { NextRequest } from "next/server";

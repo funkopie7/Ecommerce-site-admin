@@ -28,6 +28,16 @@ export async function storeImageUpload(form: FormData, bucket: string): Promise<
   if (!(file instanceof File)) throw new UploadError("No file provided", 400);
   if (!ACCEPTED.includes(file.type)) throw new UploadError("Image must be PNG, JPEG, WEBP, GIF or AVIF", 400);
   if (file.size > MAX_BYTES) throw new UploadError("Image must be under 8MB", 400);
-  const webp = await sharp(Buffer.from(await file.arrayBuffer())).webp({ quality: 82 }).toBuffer();
+  /* Capped at 1600px on the long edge before encoding. Nothing on the
+     storefront ever displays a product photo larger than that — the figure
+     page shows 640px, a grid card 300px, a shelf card 300px — and next/image
+     resizes for display anyway, so a 4000px original was pure cost: bucket
+     space forever, and a slow first render while the optimizer ground it down.
+     `withoutEnlargement` so a small photo is left alone rather than upscaled
+     into a blurry one. */
+  const webp = await sharp(Buffer.from(await file.arrayBuffer()))
+    .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
   return uploadImage(webp, `${randomUUID()}.webp`, "image/webp", bucket);
 }

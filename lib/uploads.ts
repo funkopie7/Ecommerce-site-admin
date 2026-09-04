@@ -30,16 +30,40 @@ export const uploadProductImage = (buffer: Buffer, filename: string, contentType
    category and collection image field reads from the same product-images
    bucket, so anything uploaded from any one of them shows up for the
    others too. Newest first: that's almost always the one just uploaded. */
-export async function listImages(bucket: string): Promise<{ name: string; url: string }[]> {
+export type StoredImage = { name: string; url: string; size: number; createdAt: string | null };
+
+export async function listImages(bucket: string, limit = 200): Promise<StoredImage[]> {
   const base = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!base || !key) throw new Error("Image storage isn't configured (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing)");
   const response = await fetch(`${base}/storage/v1/object/list/${bucket}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ prefix: "", limit: 200, sortBy: { column: "created_at", order: "desc" } }),
+    body: JSON.stringify({ prefix: "", limit, sortBy: { column: "created_at", order: "desc" } }),
   });
   if (!response.ok) throw new Error(`Could not list images: ${(await response.text()).slice(0, 200)}`);
-  const items: { name: string }[] = await response.json();
-  return items.map((item) => ({ name: item.name, url: `${base}/storage/v1/object/public/${bucket}/${item.name}` }));
+  const items: { name: string; created_at?: string; metadata?: { size?: number } }[] = await response.json();
+  return items.map((item) => ({
+    name: item.name,
+    url: `${base}/storage/v1/object/public/${bucket}/${item.name}`,
+    size: item.metadata?.size ?? 0,
+    createdAt: item.created_at ?? null,
+  }));
+}
+
+/* Removes objects from a bucket. Supabase takes a batch in one call, which
+   matters here: the media screen deletes a selection, and one request per
+   file would be both slow and only half-atomic if the network dropped
+   partway. Returns nothing useful — Storage reports success per object and
+   the caller relists anyway. */
+export async function deleteImages(bucket: string, names: string[]): Promise<void> {
+  const base = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !key) throw new Error("Image storage isn't configured (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing)");
+  const response = await fetch(`${base}/storage/v1/object/${bucket}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ prefixes: names }),
+  });
+  if (!response.ok) throw new Error(`Could not delete: ${(await response.text()).slice(0, 200)}`);
 }

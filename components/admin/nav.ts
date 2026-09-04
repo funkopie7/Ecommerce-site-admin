@@ -1,5 +1,6 @@
 import {
   Boxes,
+  ImageIcon,
   Layers,
   LayoutDashboard,
   MessageCircle,
@@ -35,6 +36,7 @@ export const navGroups: NavGroup[] = [
       { title: "Products", url: "/products", icon: Package },
       { title: "Categories", url: "/categories", icon: Layers },
       { title: "Collections", url: "/collections", icon: Boxes },
+      { title: "Images", url: "/media", icon: ImageIcon },
     ],
   },
   {
