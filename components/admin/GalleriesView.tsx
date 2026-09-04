@@ -2,31 +2,40 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { Star, Trash2, Wand2 } from "lucide-react";
 
+import { adminFetch } from "@/lib/adminApi";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorState, PageHeader } from "@/components/admin/PageHeader";
+import { ImageField } from "@/components/admin/ImageField";
+import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
 import type { Product } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
-/* Every product's photos, product by product.
+/* Every product's photos, product by product — and the place to change them.
 
-   The Images screen answers "what is in the bucket, and is anything unused" —
-   a storage question. This answers the merchandising one: which figures have
-   a gallery worth browsing and which are still showing a single photo. The
-   figure page's thumbnails, arrows and full-screen view only earn their place
-   when there is more than one image, so a catalogue where most products have
-   none is worth being able to see at a glance.
+   The Images screen answers a storage question: what is in the bucket, is
+   anything unused, can it go. This answers the merchandising one — which
+   figures have a gallery worth browsing, which are still on a single photo,
+   and which photo leads. The product form can do all this too, one figure at
+   a time, but working through a catalogue that way means opening and closing
+   a dialog several hundred times.
 
-   Order is by fewest photos first, because the products needing attention are
-   the point of the screen; sorting alphabetically would bury them. */
+   The three roles are kept disjoint: a photo is the main, or the hover, or in
+   the gallery, never two at once. Promoting one demotes whatever it replaced
+   into the gallery rather than dropping it, because the alternative is a
+   click that silently loses a photo. */
 
-type Shot = { url: string; role: "Main" | "Hover" | "Gallery" };
+type Role = "Main" | "Hover" | "Gallery";
+type Shot = { url: string; role: Role };
+
+const PAGE = 24;
 
 function shotsOf(product: Product): Shot[] {
   const shots: Shot[] = [];
   const seen = new Set<string>();
-  const push = (url: string | null | undefined, role: Shot["role"]) => {
+  const push = (url: string | null | undefined, role: Role) => {
     if (!url || seen.has(url)) return;
     seen.add(url);
     shots.push({ url, role });
@@ -37,23 +46,69 @@ function shotsOf(product: Product): Shot[] {
   return shots;
 }
 
+/* The three fields as they should be after an action, derived from the whole
+   product rather than patched field by field — the demote-the-old-one rule is
+   easy to get subtly wrong when each is edited on its own. */
+export function afterPromote(product: Product, url: string, to: "Main" | "Hover") {
+  const displaced = to === "Main" ? product.imageUrl : product.hoverImageUrl;
+  const other = to === "Main" ? product.hoverImageUrl : product.imageUrl;
+  const gallery = product.images.filter((image) => image !== url && image !== displaced);
+  // Whatever this replaced falls back into the gallery, unless it is already
+  // carrying the other role.
+  if (displaced && displaced !== url && displaced !== other) gallery.push(displaced);
+  return to === "Main"
+    ? { imageUrl: url, hoverImageUrl: other === url ? null : product.hoverImageUrl, images: gallery }
+    : { hoverImageUrl: url, imageUrl: other === url ? null : product.imageUrl, images: gallery };
+}
+
+export function afterRemove(product: Product, url: string) {
+  return {
+    imageUrl: product.imageUrl === url ? null : product.imageUrl,
+    hoverImageUrl: product.hoverImageUrl === url ? null : product.hoverImageUrl,
+    images: product.images.filter((image) => image !== url),
+  };
+}
+
 export function GalleriesView() {
   const products = useAdminResource<Product[]>("/api/admin/products");
   const [query, setQuery] = React.useState("");
   const [onlyThin, setOnlyThin] = React.useState(false);
-
-  const rows = React.useMemo(() => {
-    const all = (products.data ?? []).map((product) => ({ product, shots: shotsOf(product) }));
-    const needle = query.trim().toLowerCase();
-    return all
-      .filter(({ product, shots }) => (!onlyThin || shots.length <= 1) &&
-        (needle === "" || product.name.toLowerCase().includes(needle) || product.sku.toLowerCase().includes(needle)))
-      .sort((a, b) => a.shots.length - b.shots.length || a.product.name.localeCompare(b.product.name));
-  }, [products.data, query, onlyThin]);
+  const [shown, setShown] = React.useState(PAGE);
+  const [adding, setAdding] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const [notice, setNotice] = React.useState<string | null>(null);
 
   const all = products.data ?? [];
+
+  const matches = React.useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return all
+      .map((product) => ({ product, shots: shotsOf(product) }))
+      .filter(({ product, shots }) =>
+        (!onlyThin || shots.length <= 1) &&
+        (needle === "" || product.name.toLowerCase().includes(needle) || product.sku.toLowerCase().includes(needle)))
+      .sort((a, b) => a.shots.length - b.shots.length || a.product.name.localeCompare(b.product.name));
+  }, [all, query, onlyThin]);
+
+  // Reset the window when the filters change, or "show more" carries a count
+  // from a long list into a much shorter one.
+  React.useEffect(() => setShown(PAGE), [query, onlyThin]);
+
   const thin = all.filter((product) => shotsOf(product).length <= 1).length;
   const withGallery = all.filter((product) => product.images.length > 0).length;
+
+  async function patch(product: Product, data: Record<string, unknown>, message: string) {
+    setBusy(product.id);
+    try {
+      await adminFetch(`/api/admin/products/${product.id}`, { method: "PATCH", body: JSON.stringify(data) });
+      setNotice(message);
+      await products.reload();
+    } catch (cause) {
+      setNotice(cause instanceof Error ? cause.message : "Could not update that product.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1220px]">
@@ -67,6 +122,7 @@ export function GalleriesView() {
         }
       />
 
+      {notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}
       {products.error && <ErrorState message={`Could not load products (${products.error}).`} />}
 
       {!products.error && (
@@ -87,44 +143,126 @@ export function GalleriesView() {
               />
               Only show figures needing photos
             </label>
+            <p className="ml-auto text-xs text-muted-foreground">
+              Removing a photo here only unlinks it — delete the file itself on the Images screen.
+            </p>
           </div>
 
           {products.loading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : rows.length === 0 ? (
+          ) : matches.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nothing matches that.</p>
           ) : (
-            <div className="grid gap-3">
-              {rows.map(({ product, shots }) => (
-                <section key={product.id} className="rounded-lg border border-border p-3">
-                  <header className="mb-2 flex flex-wrap items-center gap-2">
-                    <p className="min-w-0 flex-1 truncate font-medium text-foreground">{product.name}</p>
-                    <span className="font-mono text-[11px] text-muted-foreground">{product.sku}</span>
-                    <Badge variant={shots.length <= 1 ? "outline" : "secondary"}>
-                      {shots.length} {shots.length === 1 ? "photo" : "photos"}
-                    </Badge>
-                    {!product.visible && <Badge variant="outline">Hidden</Badge>}
-                  </header>
+            <>
+              <div className="grid gap-3">
+                {matches.slice(0, shown).map(({ product, shots }) => (
+                  <section key={product.id} className="rounded-lg border border-border p-3">
+                    <header className="mb-2 flex flex-wrap items-center gap-2">
+                      <p className="min-w-0 flex-1 truncate font-medium text-foreground">{product.name}</p>
+                      <span className="font-mono text-[11px] text-muted-foreground">{product.sku}</span>
+                      <Badge variant={shots.length <= 1 ? "outline" : "secondary"}>
+                        {shots.length} {shots.length === 1 ? "photo" : "photos"}
+                      </Badge>
+                      {!product.visible && <Badge variant="outline">Hidden</Badge>}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy === product.id}
+                        onClick={() => setAdding(adding === product.id ? null : product.id)}
+                      >
+                        {adding === product.id ? "Close" : "Add photo"}
+                      </Button>
+                    </header>
 
-                  {shots.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No photos at all — this figure shows a placeholder on the shop.</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {shots.map((shot) => (
-                        <figure key={shot.url} className="w-24">
-                          <div className="relative aspect-square overflow-hidden rounded-md border border-input bg-secondary">
-                            <Image src={shot.url} alt="" fill sizes="120px" className="object-contain p-1" unoptimized />
-                          </div>
-                          <figcaption className="mt-1 text-center text-[10px] uppercase tracking-wide text-muted-foreground">
-                            {shot.role}
-                          </figcaption>
-                        </figure>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              ))}
-            </div>
+                    {shots.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No photos at all — this figure shows a placeholder on the shop.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-3">
+                        {shots.map((shot) => (
+                          <figure key={shot.url} className="w-28">
+                            <div className="relative aspect-square overflow-hidden rounded-md border border-input bg-secondary">
+                              <Image src={shot.url} alt="" fill sizes="140px" className="object-contain p-1" unoptimized />
+                              {shot.role !== "Gallery" && (
+                                <span className="absolute left-1 top-1 rounded bg-background/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground">
+                                  {shot.role}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1 flex items-center justify-center gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                title="Use as the main photo"
+                                aria-label="Use as the main photo"
+                                disabled={busy === product.id || shot.role === "Main"}
+                                onClick={() => patch(product, afterPromote(product, shot.url, "Main"), `Main photo set for ${product.name}.`)}
+                              >
+                                <Star className={`size-3.5 ${shot.role === "Main" ? "fill-amber-400 text-amber-400" : ""}`} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                title="Use as the hover photo"
+                                aria-label="Use as the hover photo"
+                                disabled={busy === product.id || shot.role === "Hover"}
+                                onClick={() => patch(product, afterPromote(product, shot.url, "Hover"), `Hover photo set for ${product.name}.`)}
+                              >
+                                <Wand2 className={`size-3.5 ${shot.role === "Hover" ? "text-primary" : ""}`} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                title="Remove from this product"
+                                aria-label="Remove from this product"
+                                disabled={busy === product.id}
+                                onClick={() => patch(product, afterRemove(product, shot.url), `Photo removed from ${product.name}.`)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </div>
+                          </figure>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Rendered only for the row being edited. One ImageField
+                        per product would mount several hundred file inputs and
+                        picker dialogs at once. */}
+                    {adding === product.id && (
+                      <div className="mt-3 border-t border-border pt-3">
+                        <ImageField
+                          id={`gallery-add-${product.id}`}
+                          label="Add a photo"
+                          value=""
+                          onChange={(url) => {
+                            if (!url || shotsOf(product).some((shot) => shot.url === url)) return;
+                            const data = product.imageUrl
+                              ? { images: [...product.images, url] }
+                              // Nothing set yet, so the first photo added becomes
+                              // the main one rather than an orphan in the gallery.
+                              : { imageUrl: url };
+                            void patch(product, data, `Photo added to ${product.name}.`);
+                            setAdding(null);
+                          }}
+                          hint="Upload a new file, or pick one already in the bucket."
+                        />
+                      </div>
+                    )}
+                  </section>
+                ))}
+              </div>
+
+              {shown < matches.length && (
+                <Button variant="outline" className="mt-4" onClick={() => setShown((current) => current + PAGE)}>
+                  Show more ({matches.length - shown} left)
+                </Button>
+              )}
+            </>
           )}
         </>
       )}

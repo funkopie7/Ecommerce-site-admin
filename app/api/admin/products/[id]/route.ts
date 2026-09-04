@@ -5,7 +5,7 @@ import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { revalidateStorefront } from "@/lib/revalidateStorefront";
 
-const productUpdate = z.object({ name: z.string().min(2).optional(), sku: z.string().min(2).optional(), slug: z.string().min(2).optional(), description: z.string().min(10).optional(), price: z.number().int().nonnegative().optional(), compareAtPrice: z.number().int().nonnegative().nullable().optional(), cost: z.number().int().nonnegative().optional(), stockQuantity: z.number().int().nonnegative().optional(), categoryId: z.string().optional(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().nullable().optional(), images: z.array(z.string().url()).optional(), visible: z.boolean().optional(), featured: z.boolean().optional() });
+const productUpdate = z.object({ name: z.string().min(2).optional(), sku: z.string().min(2).optional(), slug: z.string().min(2).optional(), description: z.string().min(10).optional(), price: z.number().int().nonnegative().optional(), compareAtPrice: z.number().int().nonnegative().nullable().optional(), cost: z.number().int().nonnegative().optional(), stockQuantity: z.number().int().nonnegative().optional(), categoryId: z.string().optional(), imageUrl: z.string().url().nullable().optional(), hoverImageUrl: z.string().url().nullable().optional(), images: z.array(z.string().url()).optional(), visible: z.boolean().optional(), featured: z.boolean().optional() });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireAdmin(request))) return error("Administrator access required", 401);
