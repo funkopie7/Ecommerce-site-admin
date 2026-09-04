@@ -4,6 +4,7 @@ import { customerFromRequest } from "@/lib/auth";
 import { error } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { createOrderFromCart, checkoutErrorResponse } from "@/lib/createOrder";
+import { sendOrderConfirmation } from "@/lib/email";
 
 // Card payment now goes through /api/customer/checkout/razorpay-order and
 // /api/customer/checkout/razorpay-verify instead of the "DUMMY_CARD" demo
@@ -21,6 +22,11 @@ export async function POST(request: NextRequest) {
     const order = await prisma.$transaction((tx) =>
       createOrderFromCart(tx, { customerId: session.customerId, addressId: parsed.data.addressId, paymentStatus: "SIMULATED_PAID", couponCode: parsed.data.couponCode }),
     );
+    /* After the transaction, never inside it: a slow mail API would hold a
+       database transaction open, and a failed send must not roll back a real
+       order. sendOrderConfirmation swallows its own errors and claims the
+       order first, so this can't double-send or throw. */
+    await sendOrderConfirmation(order.id);
     return NextResponse.json(order, { status: 201 });
   } catch (caught) {
     const { message, status } = checkoutErrorResponse(caught);

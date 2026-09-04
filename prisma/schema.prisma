@@ -216,6 +216,12 @@ model Order {
   carrier String?
   trackingCode String?
   deliveryNotes String?
+  // Stamped the moment a confirmation email is CLAIMED, not after it sends.
+  // Three paths can complete the same order — the COD route, the Razorpay
+  // verify route, and the payment.captured webhook that races it — so this
+  // is what stops a customer getting the same email twice. A claim that
+  // then fails to send is released again, so it can be retried.
+  confirmationSentAt DateTime?
   items OrderItem[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

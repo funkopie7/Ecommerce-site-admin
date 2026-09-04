@@ -4,6 +4,7 @@ import { customerFromRequest } from "@/lib/auth";
 import { error } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { fulfillPaymentIntent } from "@/lib/paymentIntent";
+import { sendOrderConfirmation } from "@/lib/email";
 import { verifyRazorpaySignature } from "@/lib/razorpay";
 
 const input = z.object({
@@ -38,7 +39,11 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction((tx) =>
       fulfillPaymentIntent(tx, razorpayOrderId, { method: "RAZORPAY", note: `${razorpayOrderId}/${razorpayPaymentId}` }),
     );
-    if (!result.alreadyFulfilled) return NextResponse.json(result.order, { status: 201 });
+    if (!result.alreadyFulfilled) {
+      // Outside the transaction, and after the payment is already recorded.
+      if (result.order?.id) await sendOrderConfirmation(result.order.id);
+      return NextResponse.json(result.order, { status: 201 });
+    }
     // The payment.captured webhook already fulfilled this intent (a race
     // this endpoint lost, or it simply arrived first) — the payment is
     // just as real either way, so this returns the same order, not an error.

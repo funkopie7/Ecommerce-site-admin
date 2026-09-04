@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyRazorpayWebhookSignature } from "@/lib/razorpay";
 import { fulfillPaymentIntent } from "@/lib/paymentIntent";
+import { sendOrderConfirmation } from "@/lib/email";
 
 /** Durable backup to the client-side /razorpay-verify flow: if a customer's
  * payment succeeds but their browser closes/crashes before the checkout
@@ -39,7 +40,13 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction((tx) =>
       fulfillPaymentIntent(tx, razorpayOrderId, { method: "RAZORPAY_WEBHOOK", note: `${razorpayOrderId}/${razorpayPaymentId}` }),
     );
-    return NextResponse.json({ ok: true, ...(result.alreadyFulfilled ? { alreadyFulfilled: true } : { orderId: result.order.id }) });
+    if (result.alreadyFulfilled) return NextResponse.json({ ok: true, alreadyFulfilled: true });
+    /* The whole point of this route: if the customer's browser died before
+       /razorpay-verify ran, this is the only path that will ever email them.
+       Outside the transaction, and safe to call even when verify is racing
+       us — the claim inside decides which one actually sends. */
+    await sendOrderConfirmation(result.order.id);
+    return NextResponse.json({ ok: true, orderId: result.order.id });
   } catch (caught) {
     const code = caught instanceof Error ? caught.message : "";
     // A stale/unknown order id, or the cart/address it referenced no longer
