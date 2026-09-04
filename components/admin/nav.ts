@@ -7,6 +7,7 @@ import {
   Percent,
   Settings,
   ShoppingBag,
+  Star,
   Tags,
   Truck,
   Users,
@@ -48,11 +49,15 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    // Its own group rather than a fifth entry under Sales: answering a shopper
-    // is a different job from fulfilling an order, and it is the one screen an
-    // admin keeps open while doing something else.
+    // Its own group rather than more entries under Sales: talking to shoppers
+    // is a different job from fulfilling orders. Messages is the screen an
+    // admin keeps open while doing something else; Reviews is the one they
+    // visit when something needs taking down.
     label: "Support",
-    items: [{ title: "Messages", url: "/messages", icon: MessageCircle }],
+    items: [
+      { title: "Messages", url: "/messages", icon: MessageCircle },
+      { title: "Reviews", url: "/reviews", icon: Star },
+    ],
   },
   {
     label: "Configuration",

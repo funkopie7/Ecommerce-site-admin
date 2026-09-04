@@ -85,6 +85,7 @@ model Product {
   orderItems OrderItem[]
   adjustments InventoryAdjustment[]
   collectionItems CollectionItem[]
+  reviews Review[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -130,6 +131,45 @@ model CollectionItem {
   @@unique([collectionId, productId])
 }
 
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+}
+
+/* One review per customer per product, enforced by the compound unique below
+   — a second submission edits the first rather than stacking, which is the
+   only honest way to keep an average meaningful.
+
+   Reviews go live immediately (status PUBLISHED) instead of queuing for
+   approval. A customer who posts and can't see their own words assumes it
+   broke and posts again; and a shop that must approve each review before it
+   appears is a shop whose ratings can't be trusted. The admin can HIDE one
+   after the fact, which is the narrower power: it handles abuse and spam
+   without quietly filtering out every three-star opinion.
+
+   `verifiedPurchase` is stamped at write time by looking for an OrderItem
+   from this customer for this product. Stored rather than derived so the
+   badge can't change retroactively if an old order is ever cleaned up. */
+model Review {
+  id String @id @default(cuid())
+  productId String
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerId String
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  rating Int
+  title String?
+  body String
+  verifiedPurchase Boolean @default(false)
+  status ReviewStatus @default(PUBLISHED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([productId, customerId])
+  // The product page's own query: this product's published reviews, newest
+  // first. Without it every figure page pays a sequential scan of every
+  // review in the shop.
+  @@index([productId, status, createdAt])
+}
+
 model Customer {
   id String @id @default(cuid())
   name String
@@ -143,6 +183,7 @@ model Customer {
   wishlist Wishlist?
   conversations Conversation[]
   paymentIntents PaymentIntent[]
+  reviews Review[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
