@@ -311,11 +311,15 @@ export function SettingsView() {
             </div>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <div className="rounded-lg border border-input px-3 py-2 text-sm">
+            <div className="min-w-0 rounded-lg border border-input px-3 py-2 text-sm">
               {model.url ? (
                 <>
-                  <p className="font-medium text-foreground">{model.name ?? "Custom model"}</p>
-                  <p className="truncate font-mono text-[11px] text-muted-foreground">{model.url}</p>
+                  <p className="break-all font-medium text-foreground">{model.name ?? "Custom model"}</p>
+                  {/* `truncate` needs a width to truncate against, and inside
+                      a grid item that width is the content's own — so a long
+                      Storage URL just widened the card and pushed itself past
+                      the edge. `break-all` wraps it instead. */}
+                  <p className="break-all font-mono text-[11px] text-muted-foreground">{model.url}</p>
                 </>
               ) : (
                 <p className="text-muted-foreground">
