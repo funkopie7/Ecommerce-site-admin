@@ -41,7 +41,21 @@ export function InventoryView() {
   const [adjusting, setAdjusting] = React.useState<Product | null>(null);
   const [busyId, setBusyId] = React.useState<string | null>(null);
 
-  const rows = products.data ?? [];
+  /* Sorted by name, and deliberately not by anything an adjustment changes.
+     /api/admin/products returns `updatedAt desc`, which is right for the
+     Products screen but wrong here: adjusting stock touches the product, so
+     the row you just clicked jumped to the top of the list and everything
+     below it shifted under the cursor. Two quick adjustments in a row meant
+     hitting whichever item had taken the old one's place.
+
+     Stock level would shuffle for the same reason — it is the value being
+     edited. A name is stable under every action on this screen, and the
+     column headers still sort by quantity for anyone who wants to see what
+     is running low. */
+  const rows = React.useMemo(
+    () => [...(products.data ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+    [products.data],
+  );
 
   async function adjust(product: Product, delta: number, reason: string) {
     setBusyId(product.id);
