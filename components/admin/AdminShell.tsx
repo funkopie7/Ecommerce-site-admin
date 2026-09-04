@@ -20,7 +20,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-1 h-4" />
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-            Funkopie / Admin
+            FunkoPie / Admin
           </span>
         </header>
         <div className="flex-1 p-4 md:p-6">{children}</div>

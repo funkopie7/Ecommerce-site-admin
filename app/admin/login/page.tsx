@@ -48,7 +48,7 @@ export default function AdminLogin() {
             </div>
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                Funkopie / Admin
+                FunkoPie / Admin
               </p>
               <h1 className="text-lg font-bold tracking-tight">Sign in to operations</h1>
             </div>

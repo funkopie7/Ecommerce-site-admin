@@ -42,7 +42,7 @@ export function AppSidebar() {
                 </div>
                 <div className="grid flex-1 text-left leading-tight">
                   <span className="truncate font-display text-[15px] font-bold tracking-[-0.02em]">
-                    Funkopie
+                    FunkoPie
                   </span>
                   <span className="truncate font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                     Operations

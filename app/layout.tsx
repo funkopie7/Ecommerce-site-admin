@@ -7,7 +7,7 @@ const body = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-body", we
 const sticker = Caveat({ subsets: ["latin"], variable: "--font-sticker", weight: ["600", "700"] });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], variable: "--font-mono-loaded", weight: ["400"] });
 
-export const metadata: Metadata = { title: "Funkopie Admin", description: "Ecommerce operations workspace" };
+export const metadata: Metadata = { title: "FunkoPie Admin", description: "Ecommerce operations workspace" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="en" className={`${display.variable} ${body.variable} ${sticker.variable} ${mono.variable}`}><body>{children}</body></html>;
