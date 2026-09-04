@@ -16,6 +16,9 @@ const input = z.object({
   // stylesheet on the storefront, so anything but a hex value is a way to
   // write CSS rather than pick a colour.
   accentColor: z.string().refine(isHexColor, "Enter a colour as a hex value, like #E8622A").optional(),
+  /* Nullable on purpose: clearing it is how you go back to the derived
+     complement, which is a different thing from picking a colour. */
+  secondaryColor: z.string().refine(isHexColor, "Enter a colour as a hex value, like #6E8CA0").nullable().optional(),
   heroModelUrl: z.string().url().nullable().optional(),
   heroModelName: z.string().max(120).nullable().optional(),
 });
@@ -29,7 +32,7 @@ export async function PATCH(request: NextRequest) {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID, ...parsed.data },
     update: parsed.data,
-    select: { accentColor: true, heroModelUrl: true, heroModelName: true },
+    select: { accentColor: true, secondaryColor: true, heroModelUrl: true, heroModelName: true },
   });
   // The storefront caches these alongside the catalogue, so a theme change
   // has to drop that cache or it would take an hour to appear.

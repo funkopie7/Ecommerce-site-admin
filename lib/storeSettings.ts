@@ -9,6 +9,7 @@ export const DEFAULT_ACCENT = "#E8622A";
 
 export type PublicSettings = {
   accentColor: string;
+  secondaryColor: string | null;
   heroModelUrl: string | null;
   heroModelName: string | null;
 };
@@ -18,7 +19,7 @@ export async function getStoreSettings(): Promise<PublicSettings> {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID },
     update: {},
-    select: { accentColor: true, heroModelUrl: true, heroModelName: true },
+    select: { accentColor: true, secondaryColor: true, heroModelUrl: true, heroModelName: true },
   });
   return row;
 }

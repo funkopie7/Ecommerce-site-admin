@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Box, Palette } from "lucide-react";
+import { Blend, Box, Palette } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
-type Settings = { accentColor: string; heroModelUrl: string | null; heroModelName: string | null };
+type Settings = { accentColor: string; secondaryColor: string | null; heroModelUrl: string | null; heroModelName: string | null };
 
 const DEFAULT_ACCENT = "#E8622A";
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -29,9 +29,26 @@ const PRESETS = [
   { name: "Gold", value: "#C99031" },
 ];
 
+/* Cooler and quieter than the primary set: this colour's job is to sit beside
+   the accent without competing with it. */
+const SECONDARY_PRESETS = [
+  { name: "Slate blue", value: "#6E8CA0" },
+  { name: "Teal", value: "#3E8079" },
+  { name: "Clay", value: "#B07A5A" },
+  { name: "Moss", value: "#6B7F4F" },
+  { name: "Dusk", value: "#7C7391" },
+  { name: "Charcoal", value: "#5A5651" },
+];
+
+/* Where the live preview comes from. It is the storefront rendering itself
+   with the chosen colours, not a mock-up drawn here — a preview that can
+   disagree with the shop is worse than none. */
+const STORE_URL = process.env.NEXT_PUBLIC_STORE_URL || "https://www.funkopie.in";
+
 export function SettingsView() {
   const settings = useAdminResource<Settings>("/api/admin/settings");
   const [accent, setAccent] = React.useState(DEFAULT_ACCENT);
+  const [secondary, setSecondary] = React.useState<string | null>(null);
   const [model, setModel] = React.useState<{ url: string | null; name: string | null }>({ url: null, name: null });
   const [notice, setNotice] = React.useState<string | null>(null);
   const [failure, setFailure] = React.useState<string | null>(null);
@@ -41,13 +58,30 @@ export function SettingsView() {
   React.useEffect(() => {
     if (!settings.data) return;
     setAccent(settings.data.accentColor);
+    setSecondary(settings.data.secondaryColor);
     setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName });
   }, [settings.data]);
 
-  const valid = HEX.test(accent);
+  const valid = HEX.test(accent) && (secondary === null || HEX.test(secondary));
   const dirty =
     Boolean(settings.data) &&
-    (accent !== settings.data!.accentColor || model.url !== settings.data!.heroModelUrl);
+    (accent !== settings.data!.accentColor ||
+      secondary !== settings.data!.secondaryColor ||
+      model.url !== settings.data!.heroModelUrl);
+
+  /* Debounced so dragging the colour wheel doesn't reload the iframe on every
+     pixel of movement — the picker fires continuously while the pointer is
+     down. A quarter second is long enough to coalesce a drag and short enough
+     to still feel like it's following you. */
+  const [previewColours, setPreviewColours] = React.useState({ accent, secondary });
+  React.useEffect(() => {
+    const timer = setTimeout(() => setPreviewColours({ accent, secondary }), 250);
+    return () => clearTimeout(timer);
+  }, [accent, secondary]);
+
+  const previewSrc = `${STORE_URL}/theme-preview?accent=${encodeURIComponent(previewColours.accent)}${
+    previewColours.secondary ? `&secondary=${encodeURIComponent(previewColours.secondary)}` : ""
+  }`;
 
   async function save() {
     if (!valid) { setFailure("Enter a colour as a hex value, like #E8622A"); return; }
@@ -56,7 +90,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({ accentColor: accent, heroModelUrl: model.url, heroModelName: model.name }),
+        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, heroModelUrl: model.url, heroModelName: model.name }),
       });
       setNotice("Saved — the storefront updates within a few seconds.");
       await settings.reload();
@@ -103,6 +137,45 @@ export function SettingsView() {
       {notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}
       {failure && <ErrorState message={failure} />}
       {settings.error && <ErrorState message={`Could not load settings (${settings.error}).`} />}
+
+      {/* The live preview, above the controls rather than beside them: it is
+          the thing being edited, and the colour pickers are how you edit it.
+
+          It is an iframe of the storefront rendering itself with the chosen
+          colours, not swatches drawn here. Deriving the palette a second time
+          in the admin would mean two implementations of both the colour maths
+          and the shop's styling, and a preview that can disagree with the shop
+          is worse than no preview at all. The trade is that it needs the
+          storefront to be reachable — which, if it isn't, is worth knowing
+          before changing the theme anyway. */}
+      <div className="mt-4 overflow-hidden rounded-xl border border-border">
+        <div className="flex items-center justify-between border-b border-border bg-secondary/40 px-4 py-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Live preview — the real storefront, with the colours below
+            {dirty && <span className="ml-2 text-foreground">· unsaved</span>}
+          </p>
+          <a
+            href={previewSrc}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Open full size
+          </a>
+        </div>
+        <iframe
+          /* Keyed on the URL so a colour change swaps the frame rather than
+             navigating it — navigating would push an entry into the admin's
+             own history, and Back would then walk through every colour tried
+             instead of leaving the page. */
+          key={previewSrc}
+          src={previewSrc}
+          title="Storefront theme preview"
+          className="h-[520px] w-full border-0 bg-secondary"
+          sandbox="allow-scripts allow-same-origin"
+          loading="lazy"
+        />
+      </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card>
@@ -156,24 +229,70 @@ export function SettingsView() {
               )}
             </div>
 
-            {/* A live sample, because a hex value tells you nothing about how
-                it will sit against the storefront's cream. */}
-            <div className="rounded-lg border border-input p-4" style={{ backgroundColor: "#FBF3E7" }}>
-              <p className="mb-2 text-xs" style={{ color: "#8A7A65" }}>Preview</p>
-              <div className="flex flex-wrap items-center gap-3">
-                <span
-                  className="rounded-full px-5 py-2.5 text-sm font-semibold"
-                  style={{ backgroundColor: valid ? accent : DEFAULT_ACCENT, color: "#FFFDF9" }}
-                >
-                  Add to bag
-                </span>
-                <span className="text-sm font-semibold" style={{ color: valid ? accent : DEFAULT_ACCENT }}>
-                  ₹1,799.00
-                </span>
-                <span className="text-sm" style={{ color: "#3A2E22" }}>
-                  Jujutsu Kaisen – Satoru Gojo
-                </span>
-              </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex-row items-start gap-3 space-y-0">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+              <Blend className="size-4" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Secondary colour</CardTitle>
+              <CardDescription>
+                The contrast colour — the &ldquo;just unboxed&rdquo; sticker, the DC wash, the dark drops
+                band. Leave it derived and it follows the accent automatically.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Derived is the default and deliberately first: most shops
+                  never need to touch this, and the automatic complement is a
+                  better answer than a colour picked without reference to the
+                  accent. */}
+              <button
+                type="button"
+                onClick={() => setSecondary(null)}
+                className={`rounded-full border-2 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  secondary === null ? "border-foreground text-foreground" : "border-input text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                Derive from accent
+              </button>
+              {SECONDARY_PRESETS.map((preset) => (
+                <button
+                  key={preset.value}
+                  type="button"
+                  onClick={() => setSecondary(preset.value)}
+                  title={preset.name}
+                  aria-label={preset.name}
+                  className={`size-9 rounded-full border-2 transition-transform hover:scale-110 ${
+                    secondary?.toLowerCase() === preset.value.toLowerCase() ? "border-foreground" : "border-transparent"
+                  }`}
+                  style={{ backgroundColor: preset.value }}
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={secondary && HEX.test(secondary) ? secondary : "#6E8CA0"}
+                onChange={(event) => setSecondary(event.target.value.toUpperCase())}
+                className="size-10 cursor-pointer rounded border border-input bg-transparent p-1"
+                aria-label="Pick a secondary colour"
+              />
+              <Input
+                value={secondary ?? ""}
+                placeholder="Derived from the accent"
+                onChange={(event) => setSecondary(event.target.value.trim() === "" ? null : event.target.value)}
+                className="max-w-[190px] font-mono"
+                aria-label="Secondary hex colour"
+              />
+              {secondary !== null && !HEX.test(secondary) && (
+                <span className="text-xs text-destructive">Needs to be a hex value</span>
+              )}
             </div>
           </CardContent>
         </Card>

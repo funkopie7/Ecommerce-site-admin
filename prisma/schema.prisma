@@ -416,6 +416,12 @@ model Message {
 model StoreSettings {
   id String @id @default("store")
   accentColor String @default("#E8622A")
+  /* The second accent. Left null it is derived from the primary — roughly its
+     opposite on the wheel, which is where the original blue sat relative to
+     the orange. Set it and that derivation is overridden. It is the shop's
+     contrast colour: the "just unboxed" sticker, the DC universe wash, and
+     anywhere a second voice is needed against the accent. */
+  secondaryColor String?
   heroModelUrl String?
   heroModelName String?
   updatedAt DateTime @updatedAt
