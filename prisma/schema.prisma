@@ -437,5 +437,13 @@ model StoreSettings {
   heroBoxBanner String @default("DEMON SLAYER")
   heroBoxName String @default("TANJIRO")
   heroBoxSubtitle String @default("WITH NOODLES")
+  /* The two squares of the checkerboard printed behind the figure, and the
+     colour of the box's own sides. Sampled from the original figure's haori,
+     so like the labels they were right for exactly one model. Hex, validated
+     on write and again on read — these are drawn onto a canvas rather than
+     into markup, but an unchecked value would still be handed to a WebGL
+     material and silently render as black. */
+  heroBoxCheckLight String @default("#1E5B4F")
+  heroBoxCheckDark String @default("#12181A")
   updatedAt DateTime @updatedAt
 }

@@ -17,6 +17,8 @@ type BoxLabels = {
   heroBoxBanner: string;
   heroBoxName: string;
   heroBoxSubtitle: string;
+  heroBoxCheckLight: string;
+  heroBoxCheckDark: string;
 };
 
 type Settings = { accentColor: string; secondaryColor: string | null; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
@@ -33,12 +35,23 @@ const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
   { key: "heroBoxSubtitle", label: "Nameplate subtitle", hint: "The smaller line under the name. Leave blank to omit it." },
 ];
 
+/* The checkerboard behind the figure, and the box's own sides. Separate from
+   the text fields because they are colours, not copy — and because they are
+   the one part of the artwork a shop is likely to change without changing the
+   model, to match a different franchise's packaging. */
+const BOX_CHECKS: { key: "heroBoxCheckLight" | "heroBoxCheckDark"; label: string; hint: string }[] = [
+  { key: "heroBoxCheckLight", label: "Check colour", hint: "The lighter square of the checkerboard." },
+  { key: "heroBoxCheckDark", label: "Check shadow", hint: "The darker square, and the box's own sides." },
+];
+
 const DEFAULT_BOX: BoxLabels = {
   heroBoxLine: "ANIMATION",
   heroBoxNumber: "1000",
   heroBoxBanner: "DEMON SLAYER",
   heroBoxName: "TANJIRO",
   heroBoxSubtitle: "WITH NOODLES",
+  heroBoxCheckLight: "#1E5B4F",
+  heroBoxCheckDark: "#12181A",
 };
 
 const DEFAULT_ACCENT = "#E8622A";
@@ -94,17 +107,21 @@ export function SettingsView() {
       heroBoxBanner: settings.data.heroBoxBanner,
       heroBoxName: settings.data.heroBoxName,
       heroBoxSubtitle: settings.data.heroBoxSubtitle,
+      heroBoxCheckLight: settings.data.heroBoxCheckLight,
+      heroBoxCheckDark: settings.data.heroBoxCheckDark,
     });
     setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName });
   }, [settings.data]);
 
-  const valid = HEX.test(accent) && (secondary === null || HEX.test(secondary));
+  const valid = HEX.test(accent) && (secondary === null || HEX.test(secondary)) &&
+    BOX_CHECKS.every(({ key }) => HEX.test(box[key]));
   const dirty =
     Boolean(settings.data) &&
     (accent !== settings.data!.accentColor ||
       secondary !== settings.data!.secondaryColor ||
       model.url !== settings.data!.heroModelUrl ||
-      BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]));
+      BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]) ||
+      BOX_CHECKS.some(({ key }) => box[key] !== settings.data![key]));
 
   /* Debounced so dragging the colour wheel doesn't reload the iframe on every
      pixel of movement — the picker fires continuously while the pointer is
@@ -413,6 +430,28 @@ export function SettingsView() {
                   maxLength={40}
                   onChange={(event) => setBox((current) => ({ ...current, [field.key]: event.target.value }))}
                 />
+                <p className="text-xs text-muted-foreground">{field.hint}</p>
+              </div>
+            ))}
+
+            {BOX_CHECKS.map((field) => (
+              <div key={field.key} className="grid gap-1.5">
+                <Label htmlFor={`box-${field.key}`}>{field.label}</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={HEX.test(box[field.key]) ? box[field.key] : DEFAULT_BOX[field.key]}
+                    onChange={(event) => setBox((current) => ({ ...current, [field.key]: event.target.value.toUpperCase() }))}
+                    className="size-10 cursor-pointer rounded border border-input bg-transparent p-1"
+                    aria-label={field.label}
+                  />
+                  <Input
+                    id={`box-${field.key}`}
+                    value={box[field.key]}
+                    onChange={(event) => setBox((current) => ({ ...current, [field.key]: event.target.value }))}
+                    className="max-w-[140px] font-mono"
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">{field.hint}</p>
               </div>
             ))}

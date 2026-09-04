@@ -74,6 +74,7 @@ export function GalleriesView() {
   const [query, setQuery] = React.useState("");
   const [onlyThin, setOnlyThin] = React.useState(false);
   const [shown, setShown] = React.useState(PAGE);
+  const sentinel = React.useRef<HTMLDivElement>(null);
   const [adding, setAdding] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
@@ -90,9 +91,28 @@ export function GalleriesView() {
       .sort((a, b) => a.shots.length - b.shots.length || a.product.name.localeCompare(b.product.name));
   }, [all, query, onlyThin]);
 
-  // Reset the window when the filters change, or "show more" carries a count
-  // from a long list into a much shorter one.
+  // Reset the window when the filters change, or the count carries over from a
+  // long list into a much shorter one.
   React.useEffect(() => setShown(PAGE), [query, onlyThin]);
+
+  /* Loads the next page when the end of the list comes into view, instead of
+     asking for a click. `rootMargin` starts the next batch a screen early, so
+     scrolling stays continuous rather than stopping at a gap while thumbnails
+     decode.
+
+     Deliberately not virtualised: the rows are already rendered, and tearing
+     out rows above the viewport would break in-page find, which is how you
+     actually locate one figure among five hundred. This only grows the list. */
+  React.useEffect(() => {
+    const node = sentinel.current;
+    if (!node || shown >= matches.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0]?.isIntersecting) setShown((current) => current + PAGE); },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shown, matches.length]);
 
   const thin = all.filter((product) => shotsOf(product).length <= 1).length;
   const withGallery = all.filter((product) => product.images.length > 0).length;
@@ -257,10 +277,17 @@ export function GalleriesView() {
                 ))}
               </div>
 
+              {/* The observer target, plus a plain button behind it. The
+                  observer never fires where IntersectionObserver is missing or
+                  where the list is short enough not to scroll, and a list that
+                  silently stops at row 24 with no way forward is worse than a
+                  button nobody needs to press. */}
               {shown < matches.length && (
-                <Button variant="outline" className="mt-4" onClick={() => setShown((current) => current + PAGE)}>
-                  Show more ({matches.length - shown} left)
-                </Button>
+                <div ref={sentinel} className="mt-4 flex justify-center">
+                  <Button variant="ghost" size="sm" onClick={() => setShown((current) => current + PAGE)}>
+                    Loading {matches.length - shown} more…
+                  </Button>
+                </div>
               )}
             </>
           )}
