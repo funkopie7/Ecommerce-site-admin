@@ -4,7 +4,9 @@ import { beforeEach, expect, it, vi } from "vitest";
    chainable too — a stub missing resize() fails inside the route and surfaces
    as a 500 rather than as the missing method it is. */
 vi.mock("sharp", () => {
-  const chain = { resize: () => chain, webp: () => chain, toBuffer: async () => Buffer.from("fake-webp-bytes") };
+  // metadata() is part of the chain too: storeVariants reads the source width
+  // to decide whether a size would be an upscale.
+  const chain = { resize: () => chain, webp: () => chain, toBuffer: async () => Buffer.from("fake-webp-bytes"), metadata: async () => ({ width: 1600, height: 1600 }) };
   return { default: () => chain };
 });
 const { uploadImage } = vi.hoisted(() => ({ uploadImage: vi.fn(async (_b: Buffer, name: string, _t: string, bucket: string) => `https://example.supabase.co/storage/v1/object/public/${bucket}/${name}`) }));

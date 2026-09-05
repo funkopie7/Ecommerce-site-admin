@@ -7,7 +7,9 @@ import { expect, it, vi } from "vitest";
    chainable too — a stub missing resize() fails inside the route and surfaces
    as a 500 rather than as the missing method it is. */
 vi.mock("sharp", () => {
-  const chain = { resize: () => chain, webp: () => chain, toBuffer: async () => Buffer.from("fake-webp-bytes") };
+  // metadata() is part of the chain too: storeVariants reads the source width
+  // to decide whether a size would be an upscale.
+  const chain = { resize: () => chain, webp: () => chain, toBuffer: async () => Buffer.from("fake-webp-bytes"), metadata: async () => ({ width: 1600, height: 1600 }) };
   return { default: () => chain };
 });
 const { uploadImage, listImages } = vi.hoisted(() => ({
@@ -38,6 +40,22 @@ it("puts a product photo in the catalogue bucket, not the chat one", async () =>
   uploadImage.mockClear();
   await POST(postWith(new File([Buffer.from("x")], "photo.png", { type: "image/png" })));
   expect(uploadImage).toHaveBeenCalledWith(expect.anything(), expect.stringContaining(".webp"), "image/webp", "product-images");
+});
+
+/* The storefront's image loader asks for these three widths by name. If they
+   stop being generated it does not break — the loader falls back to the
+   full-size original — which is exactly why it needs a test: the page still
+   looks right while quietly serving five times the bytes. */
+it("generates the 320, 640 and 1280 variants beside a product photo", async () => {
+  process.env.ADMIN_API_KEY = "test-key";
+  uploadImage.mockClear();
+  await POST(postWith(new File([Buffer.from("x")], "photo.png", { type: "image/png" })));
+  const paths = uploadImage.mock.calls.map((call) => call[1] as string);
+  const original = paths.find((path) => !path.startsWith("w"))!;
+  expect(original).toMatch(/\.webp$/);
+  for (const width of [320, 640, 1280]) {
+    expect(paths).toContain(`w${width}/${original}`);
+  }
 });
 
 it("rejects a file type the pipeline doesn't accept", async () => {
