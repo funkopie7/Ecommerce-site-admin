@@ -19,6 +19,7 @@ type BoxLabels = {
   heroBoxSubtitle: string;
   heroBoxCheckLight: string;
   heroBoxCheckDark: string;
+  heroBoxNumberColor: string;
 };
 
 type Settings = { accentColor: string; secondaryColor: string | null; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
@@ -39,9 +40,10 @@ const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
    the text fields because they are colours, not copy — and because they are
    the one part of the artwork a shop is likely to change without changing the
    model, to match a different franchise's packaging. */
-const BOX_CHECKS: { key: "heroBoxCheckLight" | "heroBoxCheckDark"; label: string; hint: string }[] = [
+const BOX_CHECKS: { key: "heroBoxCheckLight" | "heroBoxCheckDark" | "heroBoxNumberColor"; label: string; hint: string }[] = [
   { key: "heroBoxCheckLight", label: "Check colour", hint: "The lighter square of the checkerboard." },
   { key: "heroBoxCheckDark", label: "Check shadow", hint: "The darker square, and the box's own sides." },
+  { key: "heroBoxNumberColor", label: "Figure number", hint: "The number in the top-right corner. It sits on the checks, so it may need contrast against them." },
 ];
 
 const DEFAULT_BOX: BoxLabels = {
@@ -52,6 +54,7 @@ const DEFAULT_BOX: BoxLabels = {
   heroBoxSubtitle: "WITH NOODLES",
   heroBoxCheckLight: "#1E5B4F",
   heroBoxCheckDark: "#12181A",
+  heroBoxNumberColor: "#FFFFFF",
 };
 
 const DEFAULT_ACCENT = "#E8622A";
@@ -109,6 +112,7 @@ export function SettingsView() {
       heroBoxSubtitle: settings.data.heroBoxSubtitle,
       heroBoxCheckLight: settings.data.heroBoxCheckLight,
       heroBoxCheckDark: settings.data.heroBoxCheckDark,
+      heroBoxNumberColor: settings.data.heroBoxNumberColor,
     });
     setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName });
   }, [settings.data]);

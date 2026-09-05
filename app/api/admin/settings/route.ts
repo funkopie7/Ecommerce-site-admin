@@ -32,6 +32,7 @@ const input = z.object({
   heroBoxSubtitle: z.string().max(40).optional(),
   heroBoxCheckLight: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
   heroBoxCheckDark: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
+  heroBoxNumberColor: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
 
 
 });
@@ -45,7 +46,7 @@ export async function PATCH(request: NextRequest) {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID, ...parsed.data },
     update: parsed.data,
-    select: { accentColor: true, secondaryColor: true, heroModelUrl: true, heroModelName: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true },
+    select: { accentColor: true, secondaryColor: true, heroModelUrl: true, heroModelName: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
   });
   // The storefront caches these alongside the catalogue, so a theme change
   // has to drop that cache or it would take an hour to appear.

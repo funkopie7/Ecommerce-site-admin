@@ -450,5 +450,10 @@ model StoreSettings {
      material and silently render as black. */
   heroBoxCheckLight String @default("#1E5B4F")
   heroBoxCheckDark String @default("#12181A")
+  /* The figure number in the top-right of the box. Its own field rather than
+     reusing a check colour: it sits on the checkerboard, so it is the one
+     piece of type whose contrast depends on choices made elsewhere in this
+     block, and it needs to be tunable independently of them. */
+  heroBoxNumberColor String @default("#FFFFFF")
   updatedAt DateTime @updatedAt
 }
