@@ -15,24 +15,28 @@ export async function uploadImage(buffer: Buffer, filename: string, contentType:
   const base = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!base || !key) throw new Error("Image storage isn't configured (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing)");
+
+  /* Multipart with a `cacheControl` field, not a raw body with a
+     `cache-control` header. Only this form is honoured — sending the header
+     on a binary POST returns 200 and is then silently discarded, and the
+     object continues to be served as `no-cache`. That is worth stating
+     because the failure is invisible: the upload succeeds either way.
+
+     Why it matters: `no-cache` upstream makes Next refuse to cache the
+     optimized copy at all, so every request re-fetched the original from
+     storage and re-encoded it. That is what exhausted 5,000 image
+     transformations and drove gigabytes of egress in a few weeks.
+
+     A year is safe because these names are immutable — every upload gets a
+     fresh UUID, so a URL here can never come to mean a different file. */
+  const form = new FormData();
+  form.append("cacheControl", "31536000");
+  form.append("", new Blob([new Uint8Array(buffer)], { type: contentType }), filename);
+
   const response = await fetch(`${base}/storage/v1/object/${bucket}/${filename}`, {
     method: "POST",
-    /* cache-control matters more here than it looks. Without it Supabase
-       serves these objects as `no-cache`, and Next then falls back to its own
-       60-second minimum for the transformed copy — so every photo was being
-       re-fetched and re-encoded about once a minute for as long as anyone was
-       browsing. That pair of defaults is what exhausted 5,000 image
-       transformations and several gigabytes of egress.
-
-       A year is safe because these names are immutable: every upload gets a
-       fresh UUID, so a given URL can never come to mean a different image. */
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": contentType,
-      "cache-control": "public, max-age=31536000, immutable",
-      "x-upsert": "true",
-    },
-    body: new Uint8Array(buffer),
+    headers: { Authorization: `Bearer ${key}`, "x-upsert": "true" },
+    body: form,
   });
   if (!response.ok) throw new Error(`Upload failed: ${(await response.text()).slice(0, 200)}`);
   return `${base}/storage/v1/object/public/${bucket}/${filename}`;
