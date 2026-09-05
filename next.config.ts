@@ -17,6 +17,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   typedRoutes: true,
   images: {
+    /* Off, for the same reason as the storefront: the team's 5,000
+       transformations are spent and /_next/image answers 402. These screens
+       are used by one person on a desktop, so serving the stored file is the
+       lesser cost — and every object now carries a year-long cache header, so
+       it is fetched once rather than on every visit. */
+    unoptimized: true,
     minimumCacheTTL: 60 * 60 * 24 * 365,
     deviceSizes: [640, 1080],
     imageSizes: [96, 128, 256],
