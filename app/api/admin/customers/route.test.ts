@@ -1,7 +1,7 @@
 // app/api/admin/customers/route.test.ts
 import { expect, it, vi, beforeEach } from "vitest";
-const { findMany, orderFindMany } = vi.hoisted(() => ({ findMany: vi.fn(), orderFindMany: vi.fn() }));
-vi.mock("@/lib/prisma", () => ({ prisma: { customer: { findMany }, order: { findMany: orderFindMany } } }));
+const { findMany, orderFindMany, queryRaw } = vi.hoisted(() => ({ findMany: vi.fn(), orderFindMany: vi.fn(), queryRaw: vi.fn() }));
+vi.mock("@/lib/prisma", () => ({ prisma: { customer: { findMany }, order: { findMany: orderFindMany }, $queryRaw: queryRaw } }));
 import { NextRequest } from "next/server";
 import { GET } from "./route";
 
@@ -11,6 +11,10 @@ beforeEach(() => {
   process.env.ADMIN_API_KEY = "test-key";
   findMany.mockReset().mockResolvedValue([{ id: "cust1", name: "Ansh", email: "a@b.com", phone: "9999999999" }]);
   orderFindMany.mockReset().mockResolvedValue([]);
+  // The ?q= path runs two raw queries: accounts, then walk-ins.
+  queryRaw.mockReset()
+    .mockResolvedValueOnce([{ id: "cust1", name: "Ansh", email: "a@b.com", phone: "+91 63019 24850" }])
+    .mockResolvedValueOnce([]);
 });
 
 it("searches customers by name, email or phone", async () => {
@@ -20,11 +24,30 @@ it("searches customers by name, email or phone", async () => {
   expect(await response.json()).toHaveLength(1);
 });
 
-it("returns no results for a query under two characters, without hitting the database", async () => {
+/* A single letter used to return nothing, which in a shop whose customers all
+   share an initial made the picker look broken rather than strict. */
+it("searches from a single character", async () => {
   const request = new NextRequest("http://localhost/api/admin/customers?q=a", { headers: { "x-admin-key": "test-key" } });
-  const response = await GET(request);
-  expect(await response.json()).toEqual([]);
-  expect(findMany).not.toHaveBeenCalled();
+  const body = await (await GET(request)).json();
+  expect(body).toHaveLength(1);
+  expect(queryRaw).toHaveBeenCalled();
+});
+
+it("returns nothing for an empty query, without hitting the database", async () => {
+  const request = new NextRequest("http://localhost/api/admin/customers?q=", { headers: { "x-admin-key": "test-key" } });
+  expect(await (await GET(request)).json()).toEqual([]);
+  expect(queryRaw).not.toHaveBeenCalled();
+});
+
+/* Walk-ins have no Customer row, so the picker tags them and the dialog uses
+   one to prefill rather than to attach an order. */
+it("returns walk-ins alongside accounts, tagged", async () => {
+  queryRaw.mockReset()
+    .mockResolvedValueOnce([{ id: "cust1", name: "Ansh", email: "a@b.com", phone: null }])
+    .mockResolvedValueOnce([{ name: "ansh", phone: "6301924850", email: null }]);
+  const request = new NextRequest("http://localhost/api/admin/customers?q=ansh", { headers: { "x-admin-key": "test-key" } });
+  const body = await (await GET(request)).json();
+  expect(body.map((row: { kind: string }) => row.kind)).toEqual(["account", "walkin"]);
 });
 
 it("refuses an unauthenticated search", async () => {

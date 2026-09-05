@@ -24,7 +24,17 @@ import {
 } from "@/components/ui/select";
 import { ORDER_STATUSES, type Order, type OrderStatus, type Product } from "@/components/admin/types";
 
-type CustomerHit = { id: string; name: string; email: string; phone: string | null };
+type CustomerHit = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  /* A walk-in has no Customer row, so it cannot be attached to an order the
+     way an account can. Picking one fills in the walk-in fields instead —
+     which is the useful thing anyway, since the alternative is retyping a
+     repeat customer's details from memory. */
+  kind?: "account" | "walkin";
+};
 
 /**
  * For a sale conducted in person — over the phone, at a pop-up, cash in
@@ -57,6 +67,19 @@ export function ManualOrderDialog({
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
 
+  function pick(hit: CustomerHit) {
+    setCustomerHits([]);
+    setCustomerQuery("");
+    if (hit.kind === "walkin") {
+      setMode("walkin");
+      setWalkinName(hit.name);
+      setWalkinPhone(hit.phone ?? "");
+      setWalkinEmail(hit.email ?? "");
+      return;
+    }
+    setCustomer(hit);
+  }
+
   React.useEffect(() => {
     if (!open) return;
     setMode("walkin");
@@ -74,7 +97,8 @@ export function ManualOrderDialog({
   }, [open]);
 
   React.useEffect(() => {
-    if (customerQuery.trim().length < 2) { setCustomerHits([]); return; }
+    // One character is enough — the API searches from a single letter now.
+    if (customerQuery.trim().length < 1) { setCustomerHits([]); return; }
     const timer = setTimeout(() => {
       adminFetch<CustomerHit[]>(`/api/admin/customers?q=${encodeURIComponent(customerQuery.trim())}`).then(setCustomerHits).catch(() => setCustomerHits([]));
     }, 250);
@@ -184,7 +208,7 @@ export function ManualOrderDialog({
                 </div>
               ) : (
                 <>
-                  <Input placeholder="Search by name, email or phone…" value={customerQuery} onChange={(event) => setCustomerQuery(event.target.value)} />
+                  <Input placeholder="Search by name, email or phone — one letter is enough" value={customerQuery} onChange={(event) => setCustomerQuery(event.target.value)} />
                   {customerHits.length > 0 && (
                     <div className="max-h-40 overflow-y-auto rounded-md border border-input">
                       {customerHits.map((hit) => (
@@ -192,10 +216,19 @@ export function ManualOrderDialog({
                           type="button"
                           key={hit.id}
                           className="flex w-full flex-col items-start border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-accent"
-                          onClick={() => { setCustomer(hit); setCustomerHits([]); setCustomerQuery(""); }}
+                          onClick={() => pick(hit)}
                         >
-                          <span className="font-medium text-foreground">{hit.name}</span>
-                          <span className="text-xs text-muted-foreground">{hit.email}{hit.phone ? ` · ${hit.phone}` : ""}</span>
+                          <span className="flex items-center gap-2 font-medium text-foreground">
+                            {hit.name}
+                            {hit.kind === "walkin" && (
+                              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-normal uppercase tracking-wide text-muted-foreground">
+                                Walk-in
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {hit.email || "No email"}{hit.phone ? ` · ${hit.phone}` : ""}
+                          </span>
                         </button>
                       ))}
                     </div>
