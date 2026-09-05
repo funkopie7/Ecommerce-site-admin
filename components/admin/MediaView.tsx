@@ -128,7 +128,7 @@ export function MediaView() {
                     } ${inUse ? "cursor-default" : "cursor-pointer hover:border-primary"}`}
                   >
                     <div className="relative aspect-square bg-secondary">
-                      <Image src={image.url} alt="" fill sizes="220px" className="object-contain p-2" unoptimized />
+                      <Image src={image.url} alt="" fill sizes="256px" className="object-contain p-2" />
                       {!inUse && (
                         <span
                           className={`absolute left-2 top-2 flex size-5 items-center justify-center rounded border bg-background text-[11px] ${

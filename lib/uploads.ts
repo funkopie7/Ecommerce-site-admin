@@ -17,7 +17,21 @@ export async function uploadImage(buffer: Buffer, filename: string, contentType:
   if (!base || !key) throw new Error("Image storage isn't configured (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing)");
   const response = await fetch(`${base}/storage/v1/object/${bucket}/${filename}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": contentType, "x-upsert": "true" },
+    /* cache-control matters more here than it looks. Without it Supabase
+       serves these objects as `no-cache`, and Next then falls back to its own
+       60-second minimum for the transformed copy — so every photo was being
+       re-fetched and re-encoded about once a minute for as long as anyone was
+       browsing. That pair of defaults is what exhausted 5,000 image
+       transformations and several gigabytes of egress.
+
+       A year is safe because these names are immutable: every upload gets a
+       fresh UUID, so a given URL can never come to mean a different image. */
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": contentType,
+      "cache-control": "public, max-age=31536000, immutable",
+      "x-upsert": "true",
+    },
     body: new Uint8Array(buffer),
   });
   if (!response.ok) throw new Error(`Upload failed: ${(await response.text()).slice(0, 200)}`);

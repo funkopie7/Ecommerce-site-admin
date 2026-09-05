@@ -203,7 +203,7 @@ export function GalleriesView() {
                         {shots.map((shot) => (
                           <figure key={shot.url} className="w-28">
                             <div className="relative aspect-square overflow-hidden rounded-md border border-input bg-secondary">
-                              <Image src={shot.url} alt="" fill sizes="140px" className="object-contain p-1" unoptimized />
+                              <Image src={shot.url} alt="" fill sizes="128px" className="object-contain p-1" />
                               {shot.role !== "Gallery" && (
                                 <span className="absolute left-1 top-1 rounded bg-background/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground">
                                   {shot.role}
