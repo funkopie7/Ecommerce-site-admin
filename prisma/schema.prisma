@@ -418,6 +418,35 @@ model Message {
    against var(--orange) follows it. `heroModelUrl` is the .glb standing in
    the homepage hero — bundled as a static file until now, which meant
    swapping the figure took a code change and a deploy. */
+/* A saved hero configuration, switchable as a set.
+
+   Changing the figure in the hero means changing eight things together — the
+   model, the five lines of packaging copy, and the three colours — and getting
+   one wrong leaves a Jujutsu Kaisen figure standing in a Demon Slayer box.
+   Presets make that one click instead of eight edits, and make it reversible:
+   the Tanjiro setup can be kept as a preset and returned to after trying
+   another.
+
+   Deliberately a copy of the values rather than a reference to them. A preset
+   is a snapshot of how the hero looked, so editing the live settings must not
+   silently rewrite the preset you would go back to. */
+model HeroPreset {
+  id String @id @default(cuid())
+  name String @unique
+  heroModelUrl String?
+  heroModelName String?
+  heroBoxLine String @default("ANIMATION")
+  heroBoxNumber String @default("1000")
+  heroBoxBanner String @default("DEMON SLAYER")
+  heroBoxName String @default("TANJIRO")
+  heroBoxSubtitle String @default("WITH NOODLES")
+  heroBoxCheckLight String @default("#1E5B4F")
+  heroBoxCheckDark String @default("#12181A")
+  heroBoxNumberColor String @default("#FFFFFF")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model StoreSettings {
   id String @id @default("store")
   accentColor String @default("#E8622A")

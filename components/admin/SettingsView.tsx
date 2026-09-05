@@ -22,6 +22,8 @@ type BoxLabels = {
   heroBoxNumberColor: string;
 };
 
+type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
+
 type Settings = { accentColor: string; secondaryColor: string | null; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
 
 /* The box face is drawn in code, so these are the only words on it. Order
@@ -94,6 +96,8 @@ export function SettingsView() {
   const [accent, setAccent] = React.useState(DEFAULT_ACCENT);
   const [secondary, setSecondary] = React.useState<string | null>(null);
   const [box, setBox] = React.useState<BoxLabels>(DEFAULT_BOX);
+  const presets = useAdminResource<HeroPreset[]>("/api/admin/hero-presets");
+  const [presetBusy, setPresetBusy] = React.useState(false);
   const [model, setModel] = React.useState<{ url: string | null; name: string | null }>({ url: null, name: null });
   const [notice, setNotice] = React.useState<string | null>(null);
   const [failure, setFailure] = React.useState<string | null>(null);
@@ -140,6 +144,56 @@ export function SettingsView() {
   const previewSrc = `${STORE_URL}/theme-preview?accent=${encodeURIComponent(previewColours.accent)}${
     previewColours.secondary ? `&secondary=${encodeURIComponent(previewColours.secondary)}` : ""
   }`;
+
+  /* Applying loads the preset into the form but does NOT save it. The change
+     is visible in the preview above first, and Save is still the thing that
+     puts it on the shop — so trying a preset is free and reversible. */
+  function applyPreset(preset: HeroPreset) {
+    setBox({
+      heroBoxLine: preset.heroBoxLine,
+      heroBoxNumber: preset.heroBoxNumber,
+      heroBoxBanner: preset.heroBoxBanner,
+      heroBoxName: preset.heroBoxName,
+      heroBoxSubtitle: preset.heroBoxSubtitle,
+      heroBoxCheckLight: preset.heroBoxCheckLight,
+      heroBoxCheckDark: preset.heroBoxCheckDark,
+      heroBoxNumberColor: preset.heroBoxNumberColor,
+    });
+    setModel({ url: preset.heroModelUrl, name: preset.heroModelName });
+    setNotice(`Loaded "${preset.name}" — press Save to put it on the shop.`);
+  }
+
+  async function savePreset() {
+    const name = prompt("Save the current hero setup as a preset called:", box.heroBoxName || "New preset");
+    if (!name?.trim()) return;
+    setPresetBusy(true);
+    try {
+      await adminFetch("/api/admin/hero-presets", {
+        method: "POST",
+        body: JSON.stringify({ name: name.trim(), heroModelUrl: model.url, heroModelName: model.name, ...box }),
+      });
+      setNotice(`Saved the preset "${name.trim()}".`);
+      await presets.reload();
+    } catch (cause) {
+      setFailure(cause instanceof Error ? cause.message : "Could not save that preset.");
+    } finally {
+      setPresetBusy(false);
+    }
+  }
+
+  async function deletePreset(preset: HeroPreset) {
+    if (!confirm(`Delete the preset "${preset.name}"? The hero itself is not affected.`)) return;
+    setPresetBusy(true);
+    try {
+      await adminFetch(`/api/admin/hero-presets/${preset.id}`, { method: "DELETE" });
+      setNotice(`Deleted the preset "${preset.name}".`);
+      await presets.reload();
+    } catch (cause) {
+      setFailure(cause instanceof Error ? cause.message : "Could not delete that preset.");
+    } finally {
+      setPresetBusy(false);
+    }
+  }
 
   async function save() {
     if (!valid) { setFailure("Enter a colour as a hex value, like #E8622A"); return; }
@@ -425,6 +479,49 @@ export function SettingsView() {
             </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            {/* Presets sit above the fields they fill, because switching
+                figure is the common task and editing eight values by hand is
+                the rare one. */}
+            <div className="sm:col-span-2 rounded-lg border border-input p-3">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium text-foreground">Presets</p>
+                <Button type="button" variant="outline" size="sm" disabled={presetBusy} onClick={savePreset}>
+                  Save current setup
+                </Button>
+              </div>
+              {presets.data && presets.data.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {presets.data.map((preset) => (
+                    <span key={preset.id} className="inline-flex items-center overflow-hidden rounded-full border border-input">
+                      <button
+                        type="button"
+                        disabled={presetBusy}
+                        onClick={() => applyPreset(preset)}
+                        className="px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                        title={`${preset.heroBoxBanner} · ${preset.heroBoxName}`}
+                      >
+                        {preset.name}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={presetBusy}
+                        onClick={() => deletePreset(preset)}
+                        aria-label={`Delete the ${preset.name} preset`}
+                        className="border-l border-input px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  None saved yet. Set the box up the way you want it, then use Save current setup — the
+                  model and all eight values are stored together, so switching figure later is one click.
+                </p>
+              )}
+            </div>
+
             {BOX_FIELDS.map((field) => (
               <div key={field.key} className="grid gap-1.5">
                 <Label htmlFor={`box-${field.key}`}>{field.label}</Label>
