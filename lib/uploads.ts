@@ -11,10 +11,38 @@
 export const PRODUCT_BUCKET = "product-images";
 export const CHAT_BUCKET = "chat-images";
 
-export async function uploadImage(buffer: Buffer, filename: string, contentType: string, bucket: string): Promise<string> {
+/* Which Supabase project a bucket's objects actually live in.
+
+   product-images was migrated wholesale to the Mumbai project — every
+   existing object copied over, every Product.imageUrl rewritten to the new
+   host. chat-images was deliberately left where it was: short-lived,
+   per-conversation attachments with no reason to move.
+
+   This function is the fix for a gap that migration left behind: the ONE-TIME
+   copy moved the data, but this file kept reading the original project's
+   credentials for every NEW write, regardless of which bucket. Every product
+   photo uploaded since — including the size variants generated on upload and
+   an uploaded hero model — was silently written to the retired project
+   instead of the one 500+ other photos already live on. It looked fine only
+   because the old project had not been paused yet; the moment it is, or its
+   free-tier storage fills, those specific files stop resolving with no
+   warning anywhere in this app. Get the bucket-to-project mapping here wrong
+   again and the same thing happens the same silent way. */
+function credentialsFor(bucket: string): { base: string; key: string } {
+  if (bucket === PRODUCT_BUCKET) {
+    const base = process.env.MUMBAI_SUPABASE_URL;
+    const key = process.env.MUMBAI_SUPABASE_SERVICE_ROLE_KEY;
+    if (!base || !key) throw new Error("Image storage isn't configured (MUMBAI_SUPABASE_URL/MUMBAI_SUPABASE_SERVICE_ROLE_KEY missing)");
+    return { base, key };
+  }
   const base = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!base || !key) throw new Error("Image storage isn't configured (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing)");
+  return { base, key };
+}
+
+export async function uploadImage(buffer: Buffer, filename: string, contentType: string, bucket: string): Promise<string> {
+  const { base, key } = credentialsFor(bucket);
 
   /* Multipart with a `cacheControl` field, not a raw body with a
      `cache-control` header. Only this form is honoured — sending the header
@@ -51,9 +79,7 @@ export const uploadProductImage = (buffer: Buffer, filename: string, contentType
 export type StoredImage = { name: string; url: string; size: number; createdAt: string | null };
 
 export async function listImages(bucket: string, limit = 200): Promise<StoredImage[]> {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!base || !key) throw new Error("Image storage isn't configured (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing)");
+  const { base, key } = credentialsFor(bucket);
   const response = await fetch(`${base}/storage/v1/object/list/${bucket}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -75,9 +101,7 @@ export async function listImages(bucket: string, limit = 200): Promise<StoredIma
    partway. Returns nothing useful — Storage reports success per object and
    the caller relists anyway. */
 export async function deleteImages(bucket: string, names: string[]): Promise<void> {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!base || !key) throw new Error("Image storage isn't configured (SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing)");
+  const { base, key } = credentialsFor(bucket);
   const response = await fetch(`${base}/storage/v1/object/${bucket}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },

@@ -15,14 +15,18 @@ datasource db {
   // next to the people using the shop, instead of the us-east-1 default
   // that put every cart and sign-in a quarter-second round trip away.
   //
-  // The prefix is what keeps the two Supabase projects from fighting. The
-  // ORIGINAL project is still connected to this app and still owns the
-  // 1.1 GB of product images — its unprefixed SUPABASE_URL and
-  // SUPABASE_SERVICE_ROLE_KEY are what the storage uploads use, and every
-  // Product.imageUrl still points at it. Only the database moved. Pointing
-  // these two at the prefixed vars rather than overwriting the unprefixed
-  // ones also means the old integration can't quietly revert the cutover
-  // the next time it syncs its own variables back.
+  // The prefix is what keeps the two Supabase projects from fighting, and
+  // it also means the old integration can't quietly revert the cutover the
+  // next time it syncs its own variables back.
+  //
+  // Storage moved too, after the database did (see migrateStorageToMumbai.mjs)
+  // — every product-images object copied over, every Product.imageUrl
+  // rewritten. lib/uploads.ts picks credentials per bucket: product-images
+  // reads the MUMBAI_ vars, chat-images deliberately still reads the
+  // unprefixed ones (short-lived, per-conversation attachments — never
+  // migrated, never needed to be). Get that mapping wrong in uploads.ts and
+  // it fails exactly like this comment once did: silently, for weeks, until
+  // someone notices a picture that never uploaded.
   url       = env("MUMBAI_POSTGRES_PRISMA_URL")
   directUrl = env("MUMBAI_POSTGRES_URL_NON_POOLING")
 }
