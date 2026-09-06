@@ -19,6 +19,9 @@ const input = z.object({
   /* Nullable on purpose: clearing it is how you go back to the derived
      complement, which is a different thing from picking a colour. */
   secondaryColor: z.string().refine(isHexColor, "Enter a colour as a hex value, like #6E8CA0").nullable().optional(),
+  // Nullable for the same reason: clearing it goes back to the automatic
+  // contrast pick rather than a literal colour.
+  secondaryTextColor: z.string().refine(isHexColor, "Enter a colour as a hex value, like #FFFFFF").nullable().optional(),
   heroModelUrl: z.string().url().nullable().optional(),
   heroModelName: z.string().max(120).nullable().optional(),
   /* Capped because they are drawn onto a fixed-width box face. The renderer
@@ -46,7 +49,7 @@ export async function PATCH(request: NextRequest) {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID, ...parsed.data },
     update: parsed.data,
-    select: { accentColor: true, secondaryColor: true, heroModelUrl: true, heroModelName: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
+    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
   });
   // The storefront caches these alongside the catalogue, so a theme change
   // has to drop that cache or it would take an hour to appear.

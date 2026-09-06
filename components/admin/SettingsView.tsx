@@ -24,7 +24,7 @@ type BoxLabels = {
 
 type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
 
-type Settings = { accentColor: string; secondaryColor: string | null; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
+type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
 
 /* The box face is drawn in code, so these are the only words on it. Order
    here matches the order they appear on the packaging, top to bottom, which
@@ -95,6 +95,7 @@ export function SettingsView() {
   const settings = useAdminResource<Settings>("/api/admin/settings");
   const [accent, setAccent] = React.useState(DEFAULT_ACCENT);
   const [secondary, setSecondary] = React.useState<string | null>(null);
+  const [secondaryText, setSecondaryText] = React.useState<string | null>(null);
   const [box, setBox] = React.useState<BoxLabels>(DEFAULT_BOX);
   const presets = useAdminResource<HeroPreset[]>("/api/admin/hero-presets");
   const [presetBusy, setPresetBusy] = React.useState(false);
@@ -108,6 +109,7 @@ export function SettingsView() {
     if (!settings.data) return;
     setAccent(settings.data.accentColor);
     setSecondary(settings.data.secondaryColor);
+    setSecondaryText(settings.data.secondaryTextColor);
     setBox({
       heroBoxLine: settings.data.heroBoxLine,
       heroBoxNumber: settings.data.heroBoxNumber,
@@ -122,11 +124,13 @@ export function SettingsView() {
   }, [settings.data]);
 
   const valid = HEX.test(accent) && (secondary === null || HEX.test(secondary)) &&
+    (secondaryText === null || HEX.test(secondaryText)) &&
     BOX_CHECKS.every(({ key }) => HEX.test(box[key]));
   const dirty =
     Boolean(settings.data) &&
     (accent !== settings.data!.accentColor ||
       secondary !== settings.data!.secondaryColor ||
+      secondaryText !== settings.data!.secondaryTextColor ||
       model.url !== settings.data!.heroModelUrl ||
       BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]) ||
       BOX_CHECKS.some(({ key }) => box[key] !== settings.data![key]));
@@ -135,15 +139,15 @@ export function SettingsView() {
      pixel of movement — the picker fires continuously while the pointer is
      down. A quarter second is long enough to coalesce a drag and short enough
      to still feel like it's following you. */
-  const [previewColours, setPreviewColours] = React.useState({ accent, secondary });
+  const [previewColours, setPreviewColours] = React.useState({ accent, secondary, secondaryText });
   React.useEffect(() => {
-    const timer = setTimeout(() => setPreviewColours({ accent, secondary }), 250);
+    const timer = setTimeout(() => setPreviewColours({ accent, secondary, secondaryText }), 250);
     return () => clearTimeout(timer);
-  }, [accent, secondary]);
+  }, [accent, secondary, secondaryText]);
 
   const previewSrc = `${STORE_URL}/theme-preview?accent=${encodeURIComponent(previewColours.accent)}${
     previewColours.secondary ? `&secondary=${encodeURIComponent(previewColours.secondary)}` : ""
-  }`;
+  }${previewColours.secondaryText ? `&secondaryText=${encodeURIComponent(previewColours.secondaryText)}` : ""}`;
 
   /* Applying loads the preset into the form but does NOT save it. The change
      is visible in the preview above first, and Save is still the thing that
@@ -202,7 +206,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, heroModelUrl: model.url, heroModelName: model.name, ...box }),
+        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, ...box }),
       });
       setNotice("Saved — the storefront updates within a few seconds.");
       await settings.reload();
@@ -405,6 +409,43 @@ export function SettingsView() {
               {secondary !== null && !HEX.test(secondary) && (
                 <span className="text-xs text-destructive">Needs to be a hex value</span>
               )}
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <Label className="text-sm">Text on the dark band</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                The drops row and footer sit on the secondary colour above. Auto picks whichever of
+                cream or dark ink reads better against it — set one directly only if the auto pick
+                isn&apos;t the one you want.
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSecondaryText(null)}
+                  className={`rounded-full border-2 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    secondaryText === null ? "border-foreground text-foreground" : "border-input text-muted-foreground hover:bg-accent"
+                  }`}
+                >
+                  Auto (best contrast)
+                </button>
+                <input
+                  type="color"
+                  value={secondaryText && HEX.test(secondaryText) ? secondaryText : "#FFFFFF"}
+                  onChange={(event) => setSecondaryText(event.target.value.toUpperCase())}
+                  className="size-10 cursor-pointer rounded border border-input bg-transparent p-1"
+                  aria-label="Pick a text colour for the dark band"
+                />
+                <Input
+                  value={secondaryText ?? ""}
+                  placeholder="Auto"
+                  onChange={(event) => setSecondaryText(event.target.value.trim() === "" ? null : event.target.value)}
+                  className="max-w-[190px] font-mono"
+                  aria-label="Dark band text hex colour"
+                />
+                {secondaryText !== null && !HEX.test(secondaryText) && (
+                  <span className="text-xs text-destructive">Needs to be a hex value</span>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

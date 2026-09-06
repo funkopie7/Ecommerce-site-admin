@@ -460,6 +460,12 @@ model StoreSettings {
      contrast colour: the "just unboxed" sticker, the DC universe wash, and
      anywhere a second voice is needed against the accent. */
   secondaryColor String?
+  /* Text colour for whatever sits on the dark band that reads from
+     secondaryColor (the drops row, the footer). Left null, the storefront
+     picks whichever of its own cream/ink reads better against that exact
+     background — but a shop that picked a light secondary and wants a
+     specific dark text (rather than the auto pick) can say so directly. */
+  secondaryTextColor String?
   heroModelUrl String?
   heroModelName String?
   /* The words printed on the hero's POP! box. The artwork is drawn in code
