@@ -44,6 +44,9 @@ export type Product = {
   franchise: string | null;
   character: string | null;
   edition: string | null;
+  variantType: string;
+  condition: string;
+  isPreorder: boolean;
   releaseDate: string | null;
   featured: boolean;
   images: string[];

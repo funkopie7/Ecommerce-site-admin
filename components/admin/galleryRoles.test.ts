@@ -7,6 +7,7 @@ const make = (over: Partial<Product>): Product => ({
   price: 0, compareAtPrice: null, cost: 0, stockQuantity: 0,
   imageUrl: null, hoverImageUrl: null, images: [], visible: true,
   franchise: null, character: null, edition: null, releaseDate: null,
+  variantType: "Common", condition: "Mint", isPreorder: false,
   featured: false, categoryId: "c1", category: { id: "c1", name: "Animation" },
   updatedAt: "", ...over,
 });

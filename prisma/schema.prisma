@@ -77,6 +77,21 @@ model Product {
   franchise String?
   character String?
   edition String?
+  /* The Funko-specific variant classification (Common/Chase/Flocked/Glow/
+     Metallic) — distinct from `edition` above (Standard/Deluxe/Exclusive),
+     which is this shop's own release tier, not Funko's chase vocabulary.
+     Defaults to Common: on a catalogue selling new merchandise, "not a
+     special variant" is the accurate default for anything not otherwise
+     called out, not a guess. */
+  variantType String @default("Common")
+  /* Condition as sold. Defaults to Mint for the same reason: everything here
+     ships as new, sealed stock unless a listing says otherwise. */
+  condition String @default("Mint")
+  /* True only for a listing taking orders ahead of stock arriving — distinct
+     from stockQuantity, which can be 0 for an ordinary sold-out product too.
+     Defaults false: preorder is a deliberate choice made per-listing, never
+     an inferred state. */
+  isPreorder Boolean @default(false)
   releaseDate DateTime?
   /* Whether this figure appears in the homepage's Featured drops row.
      Replaced a `badges String[]` pointing at a Tag vocabulary: one product in

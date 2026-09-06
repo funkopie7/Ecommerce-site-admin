@@ -5,7 +5,10 @@ import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { revalidateStorefront } from "@/lib/revalidateStorefront";
 
-const productInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().min(10), price: z.number().int().nonnegative(), compareAtPrice: z.number().int().nonnegative().optional(), cost: z.number().int().nonnegative(), stockQuantity: z.number().int().nonnegative(), categoryId: z.string(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().optional(), visible: z.boolean().default(true), featured: z.boolean().optional(), images: z.array(z.string().url()).default([]) });
+const VARIANT_TYPES = ["Common", "Chase", "Flocked", "Glow", "Metallic"] as const;
+const CONDITIONS = ["Mint", "Near Mint", "OOB"] as const;
+
+const productInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().min(10), price: z.number().int().nonnegative(), compareAtPrice: z.number().int().nonnegative().optional(), cost: z.number().int().nonnegative(), stockQuantity: z.number().int().nonnegative(), categoryId: z.string(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().optional(), visible: z.boolean().default(true), featured: z.boolean().optional(), images: z.array(z.string().url()).default([]), variantType: z.enum(VARIANT_TYPES).optional(), condition: z.enum(CONDITIONS).optional(), isPreorder: z.boolean().optional() });
 
 /**
  * SKU is generated, not typed: the product's first word, upper-cased, plus

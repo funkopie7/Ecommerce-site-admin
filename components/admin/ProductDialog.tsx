@@ -49,7 +49,13 @@ type Draft = {
   visible: boolean;
   featured: boolean;
   images: string[];
+  variantType: string;
+  condition: string;
+  isPreorder: boolean;
 };
+
+const VARIANT_TYPES = ["Common", "Chase", "Flocked", "Glow", "Metallic"] as const;
+const CONDITIONS = ["Mint", "Near Mint", "OOB"] as const;
 
 function draftFrom(product: Product | null, categories: Category[]): Draft {
   if (!product) {
@@ -70,6 +76,9 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       visible: false,
       featured: false,
       images: [],
+      variantType: "Common",
+      condition: "Mint",
+      isPreorder: false,
     };
   }
   return {
@@ -87,6 +96,9 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
     visible: product.visible,
     featured: product.featured ?? false,
     images: product.images ?? [],
+    variantType: product.variantType ?? "Common",
+    condition: product.condition ?? "Mint",
+    isPreorder: product.isPreorder ?? false,
   };
 }
 
@@ -162,6 +174,9 @@ export function ProductDialog({
       visible: draft.visible,
       featured: draft.featured,
       images: draft.images,
+      variantType: draft.variantType,
+      condition: draft.condition,
+      isPreorder: draft.isPreorder,
     };
     if (draft.compareAtPrice.trim()) payload.compareAtPrice = Math.round(Number(draft.compareAtPrice) * 100);
     else if (product) payload.compareAtPrice = null;
@@ -338,6 +353,45 @@ export function ProductDialog({
                 value={draft.stockQuantity}
                 onChange={(event) => set("stockQuantity", event.target.value)}
               />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Variant type" htmlFor="product-variant-type">
+              <Select value={draft.variantType} onValueChange={(value) => value && set("variantType", value)}>
+                <SelectTrigger id="product-variant-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {VARIANT_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Condition" htmlFor="product-condition">
+              <Select value={draft.condition} onValueChange={(value) => value && set("condition", value)}>
+                <SelectTrigger id="product-condition">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONDITIONS.map((condition) => (
+                    <SelectItem key={condition} value={condition}>{condition}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Availability" htmlFor="product-preorder" hint="Preorder is separate from stock — a listing can take orders ahead of stock arriving.">
+              <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border border-input px-3 text-sm">
+                <input
+                  id="product-preorder"
+                  type="checkbox"
+                  checked={draft.isPreorder}
+                  onChange={(event) => set("isPreorder", event.target.checked)}
+                  className="size-4 accent-[hsl(var(--primary))]"
+                />
+                Preorder
+              </label>
             </Field>
           </div>
 
