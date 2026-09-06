@@ -226,8 +226,19 @@ export function SettingsView() {
       // Not adminFetch: that sets a JSON content type, and multipart needs the
       // browser to set its own boundary.
       const response = await fetch("/api/admin/uploads/model", { method: "POST", body: form, credentials: "include" });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || "Upload failed");
+      // A rejection from the route itself comes back as JSON with a real
+      // `.error` message (see app/api/admin/uploads/model/route.ts). One
+      // that never reaches the route — the platform's own request-size limit
+      // turning it away before our handler runs — comes back as plain text
+      // or an HTML error page instead, which used to collapse into a bare
+      // "Upload failed" with no way to tell the two apart. Reading the text
+      // first keeps whatever real detail the response has either way.
+      const raw = await response.text();
+      const body = (() => { try { return JSON.parse(raw); } catch { return null; } })();
+      if (!response.ok) {
+        if (response.status === 413) throw new Error("That file is too large for the server to accept, even though it's under 12MB — try a smaller export of the model.");
+        throw new Error(body?.error || raw.slice(0, 200) || `Upload failed (${response.status})`);
+      }
       setModel({ url: body.url, name: body.name });
       setNotice("Model uploaded — press Save to put it on the homepage.");
     } catch (cause) {
