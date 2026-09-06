@@ -20,7 +20,7 @@ export type OrderPayment = { method: string; note?: string };
 export async function pricedCart(client: Prisma.TransactionClient, customerId: string, couponCode?: string) {
   const cart = await client.cart.findUnique({ where: { customerId }, include: { items: { include: { product: true } } } });
   if (!cart?.items.length) throw new Error("CART");
-  for (const item of cart.items) if (!item.product.visible || item.product.stockQuantity < item.quantity) throw new Error("STOCK");
+  for (const item of cart.items) if (!item.product.visible || (!item.product.isPreorder && item.product.stockQuantity < item.quantity)) throw new Error("STOCK");
 
   // Reprice any bundle-tagged lines at their collection's price before the
   // subtotal is computed, so a customer who kept a whole bundle together is
@@ -106,7 +106,10 @@ export async function createOrderFromCart(
   if (args.recordPayment) await tx.payment.create({ data: { orderId: order.id, amount: total, method: args.recordPayment.method, note: args.recordPayment.note } });
   if (couponCode) await tx.coupon.update({ where: { code: couponCode }, data: { usedCount: { increment: 1 } } });
 
-  for (const item of cart.items) await tx.product.update({ where: { id: item.productId }, data: { stockQuantity: { decrement: item.quantity } } });
+  // A preorder line isn't drawn from physical stock on hand — decrementing
+  // it would just push stockQuantity negative for every order taken, rather
+  // than reflecting anything real about inventory.
+  for (const item of cart.items) if (!item.product.isPreorder) await tx.product.update({ where: { id: item.productId }, data: { stockQuantity: { decrement: item.quantity } } });
   await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
   return order;
 }

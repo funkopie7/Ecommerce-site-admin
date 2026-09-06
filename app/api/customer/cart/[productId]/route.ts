@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   // from stepping a 1-in-stock line up to 2 or 3.
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) return error("Product not found", 404);
-  if (product.stockQuantity < parsed.data.quantity) return error("Not enough stock", 409);
+  if (!product.isPreorder && product.stockQuantity < parsed.data.quantity) return error("Not enough stock", 409);
   // A manual quantity edit breaks any bundle this line was part of — checkout
   // would no longer see a complete set, so the tag is cleared here rather
   // than left stale.

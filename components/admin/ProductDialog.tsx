@@ -52,6 +52,7 @@ type Draft = {
   variantType: string;
   condition: string;
   isPreorder: boolean;
+  franchise: string;
 };
 
 const VARIANT_TYPES = ["Common", "Chase", "Flocked", "Glow", "Metallic"] as const;
@@ -79,6 +80,7 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       variantType: "Common",
       condition: "Mint",
       isPreorder: false,
+      franchise: "",
     };
   }
   return {
@@ -99,14 +101,17 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
     variantType: product.variantType ?? "Common",
     condition: product.condition ?? "Mint",
     isPreorder: product.isPreorder ?? false,
+    franchise: product.franchise ?? "",
   };
 }
 
 /**
  * Create/edit form for a product. The field set is exactly what
  * POST/PATCH /api/admin/products accept — see the note rendered in the footer
- * about the catalog-only fields (franchise, character, edition, release date)
- * that the schema stores but those routes do not yet take.
+ * about the catalog-only fields (character, edition, release date) that the
+ * schema stores but those routes do not yet take. Fandom (franchise) is the
+ * exception among those: it drives the storefront's Fandom filter directly,
+ * so it's editable here even though character/edition aren't yet.
  *
  * The Featured checkbox is the exception: it is a plain boolean on the
  * product, and it decides whether the figure shows in the homepage's
@@ -178,6 +183,8 @@ export function ProductDialog({
       condition: draft.condition,
       isPreorder: draft.isPreorder,
     };
+    if (draft.franchise.trim()) payload.franchise = draft.franchise.trim();
+    else if (product) payload.franchise = null;
     if (draft.compareAtPrice.trim()) payload.compareAtPrice = Math.round(Number(draft.compareAtPrice) * 100);
     else if (product) payload.compareAtPrice = null;
     // The route validates imageUrl as a URL, so only send it when it is one.
@@ -356,6 +363,15 @@ export function ProductDialog({
             </Field>
           </div>
 
+          <Field label="Fandom" htmlFor="product-franchise" hint="Drives the storefront's Fandom filter and the breadcrumb/eyebrow label — leave blank to fall back to the category name.">
+            <Input
+              id="product-franchise"
+              value={draft.franchise}
+              onChange={(event) => set("franchise", event.target.value)}
+              placeholder="e.g. Dragon Ball Z"
+            />
+          </Field>
+
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Variant type" htmlFor="product-variant-type">
               <Select value={draft.variantType} onValueChange={(value) => value && set("variantType", value)}>
@@ -450,9 +466,8 @@ export function ProductDialog({
           )}
 
           <p className="text-xs text-muted-foreground">
-            Franchise, character, edition and release date are stored on the product record but are
-            not accepted by the admin create/update API yet, so they are shown read-only in the
-            table.
+            Character, edition and release date are stored on the product record but are not
+            accepted by the admin create/update API yet, so they are shown read-only in the table.
           </p>
 
           <DialogFooter>
