@@ -72,6 +72,21 @@ export async function uploadImage(buffer: Buffer, filename: string, contentType:
 
 export const uploadProductImage = (buffer: Buffer, filename: string, contentType: string) => uploadImage(buffer, filename, contentType, PRODUCT_BUCKET);
 
+export async function createSignedUploadUrl(filename: string, bucket: string): Promise<{ uploadUrl: string; publicUrl: string }> {
+  const { base, key } = credentialsFor(bucket);
+  const response = await fetch(`${base}/storage/v1/object/upload/sign/${bucket}/${filename}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) throw new Error(`Could not prepare upload: ${(await response.text()).slice(0, 200)}`);
+  const body: { url: string } = await response.json();
+  return {
+    uploadUrl: `${base}/storage/v1${body.url}`,
+    publicUrl: `${base}/storage/v1/object/public/${bucket}/${filename}`,
+  };
+}
+
 /* Backs the "choose an image already uploaded" picker — every product,
    category and collection image field reads from the same product-images
    bucket, so anything uploaded from any one of them shows up for the
