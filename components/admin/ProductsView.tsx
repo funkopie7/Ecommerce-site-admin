@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ImageOff, Minus, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
@@ -84,6 +85,20 @@ export function ProductsView() {
     setEditing(product);
     setDialogOpen(true);
   }
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const deepLinkedId = searchParams.get("id");
+  const consumedDeepLink = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!deepLinkedId || !products.data || consumedDeepLink.current === deepLinkedId) return;
+    const match = products.data.find((product) => product.id === deepLinkedId);
+    if (match) {
+      openEdit(match);
+      consumedDeepLink.current = deepLinkedId;
+      router.replace("/products");
+    }
+  }, [deepLinkedId, products.data, router]);
 
   async function remove(product: Product) {
     if (!window.confirm(`Delete “${product.name}”? This cannot be undone.`)) return;
@@ -195,8 +210,6 @@ export function ProductsView() {
           <Badge variant={row.visible ? "success" : "outline"}>
             {row.visible ? "Visible" : "Hidden"}
           </Badge>
-          {/* So the homepage row can be audited from the list, without opening
-              each figure to find out which ones are in it. */}
           {row.featured && <Badge variant="secondary">Featured</Badge>}
         </div>
       ),
@@ -264,8 +277,6 @@ export function ProductsView() {
         />
       )}
 
-      {/* An empty table under a failed fetch reads as "no rows exist", so the
-          table is withheld until the data actually loads. */}
       {!products.error && (
         <DataTable
           rows={rows}

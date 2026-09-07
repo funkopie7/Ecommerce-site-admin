@@ -224,11 +224,6 @@ export function ProductDialog({
             </Field>
             <Field label="Category" htmlFor="product-category">
               <div className="flex gap-1.5">
-                {/* Radix Select's items only mount once the popup has opened, so
-                    a value set programmatically (quick-created category) before
-                    that briefly finds no matching item and self-corrects with
-                    an empty onValueChange — guarded against here rather than
-                    let a real selection ever get silently wiped. */}
                 <Select value={draft.categoryId} onValueChange={(value) => value && set("categoryId", value)}>
                   <SelectTrigger id="product-category">
                     <SelectValue placeholder="Choose a category" />
@@ -403,11 +398,6 @@ export function ProductDialog({
 
           <GalleryField value={draft.images} onChange={(images) => set("images", images)} />
 
-          {/* Replaced the badge picker. Badges drove a "Featured drops" row on
-              the homepage, but one product in 508 ever carried one, so that
-              row was really filled by an arbitrary walk through the catalogue.
-              This is the control that was actually wanted: tick a figure and
-              it appears there. */}
           <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-input p-3 transition-colors hover:bg-accent">
             <input
               type="checkbox"

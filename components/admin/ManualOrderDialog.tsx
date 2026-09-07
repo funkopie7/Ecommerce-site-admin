@@ -166,9 +166,6 @@ export function ManualOrderDialog({
                 <Label htmlFor="manual-order-phone">Phone <span className="text-destructive">*</span></Label>
                 <Input id="manual-order-phone" required minLength={6} value={walkinPhone} onChange={(event) => setWalkinPhone(event.target.value)} placeholder="9876543210" />
               </div>
-              {/* Spans both columns: an address is longer than a phone number,
-                  and it is the one field here that does something after the
-                  sale rather than just recording it. */}
               <div className="grid gap-1.5 sm:col-span-2">
                 <Label htmlFor="manual-order-email">Email <span className="text-muted-foreground font-normal">optional</span></Label>
                 <Input

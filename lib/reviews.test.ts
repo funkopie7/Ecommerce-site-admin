@@ -29,7 +29,7 @@ it("reports a zero average rather than NaN when nothing is published", async () 
 
 it("rounds the average to one decimal so the page and the JSON-LD agree", async () => {
   groupBy.mockResolvedValue([{ rating: 5, _count: { rating: 2 } }, { rating: 4, _count: { rating: 1 } }]);
-  expect((await summarise("p1")).average).toBe(4.7); // 14/3 = 4.666…
+  expect((await summarise("p1")).average).toBe(4.7);
 });
 
 it("counts a past order as a verified purchase, ignoring cancelled ones", async () => {

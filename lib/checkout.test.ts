@@ -18,12 +18,12 @@ it("prices a complete bundle group at the collection's price, prorated across it
 
 it("falls back to full price when the bundle group no longer matches its collection", () => {
   const lines: BundleCartLine[] = [
-    { productId: "a", collectionId: "bundle-1", unitPrice: 10000, quantity: 2 }, // qty edited from 1 to 2
+    { productId: "a", collectionId: "bundle-1", unitPrice: 10000, quantity: 2 },
     { productId: "b", collectionId: "bundle-1", unitPrice: 5000, quantity: 1 },
   ];
   const defs = collections([{ id: "bundle-1", price: 12000, items: [{ productId: "a", quantity: 1 }, { productId: "b", quantity: 1 }] }]);
   const priced = priceBundles(lines, defs);
-  expect(totalForItems(priced)).toBe(25000); // 10000*2 + 5000, undiscounted
+  expect(totalForItems(priced)).toBe(25000);
   expect(priced.every((line) => line.collectionId === null)).toBe(true);
 });
 

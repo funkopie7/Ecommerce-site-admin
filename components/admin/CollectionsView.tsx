@@ -176,8 +176,6 @@ export function CollectionsView() {
         />
       )}
 
-      {/* An empty table under a failed fetch reads as "no rows exist", so the
-          table is withheld until the data actually loads. */}
       {!collections.error && (
         <DataTable
           rows={rows}

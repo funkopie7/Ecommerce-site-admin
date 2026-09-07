@@ -23,7 +23,7 @@ function uploadFileWithProgress(url: string, file: File, onProgress: (percent: n
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100)); };
     xhr.onload = () => {
       let data: { url?: string; error?: string } = {};
-      try { data = JSON.parse(xhr.responseText); } catch { /* non-JSON error page */ }
+      try { data = JSON.parse(xhr.responseText); } catch { }
       if (xhr.status >= 200 && xhr.status < 300 && data.url) resolve({ url: data.url });
       else reject(new Error(data.error || "Upload failed"));
     };
@@ -71,7 +71,7 @@ export function ImageField({
 
   async function openPicker() {
     setPickerOpen(true);
-    if (images) return; // already fetched this mount — Storage doesn't change under us mid-dialog
+    if (images) return;
     setLoadingImages(true);
     try {
       const response = await fetch("/api/admin/uploads", { credentials: "include" });

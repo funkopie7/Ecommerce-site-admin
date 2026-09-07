@@ -23,9 +23,9 @@ type BoxLabels = {
   heroBoxNumberColor: string;
 };
 
-type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationY: number; heroTintPhotoUrl: string | null } & BoxLabels;
+type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null } & BoxLabels;
 
-type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationY: number; heroTintPhotoUrl: string | null } & BoxLabels;
+type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null } & BoxLabels;
 
 const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
   { key: "heroBoxLine", label: "POP! line", hint: "Printed under the POP! badge — Animation, Marvel, Games…" },
@@ -83,7 +83,7 @@ export function SettingsView() {
   const [box, setBox] = React.useState<BoxLabels>(DEFAULT_BOX);
   const presets = useAdminResource<HeroPreset[]>("/api/admin/hero-presets");
   const [presetBusy, setPresetBusy] = React.useState(false);
-  const [model, setModel] = React.useState<{ url: string | null; name: string | null; rotationY: number; tintPhotoUrl: string | null }>({ url: null, name: null, rotationY: 0, tintPhotoUrl: null });
+  const [model, setModel] = React.useState<{ url: string | null; name: string | null; rotationX: number; rotationY: number; rotationZ: number; tintPhotoUrl: string | null }>({ url: null, name: null, rotationX: 0, rotationY: 0, rotationZ: 0, tintPhotoUrl: null });
   const [notice, setNotice] = React.useState<string | null>(null);
   const [failure, setFailure] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
@@ -104,7 +104,7 @@ export function SettingsView() {
       heroBoxCheckDark: settings.data.heroBoxCheckDark,
       heroBoxNumberColor: settings.data.heroBoxNumberColor,
     });
-    setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName, rotationY: settings.data.heroModelRotationY, tintPhotoUrl: settings.data.heroTintPhotoUrl });
+    setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName, rotationX: settings.data.heroModelRotationX, rotationY: settings.data.heroModelRotationY, rotationZ: settings.data.heroModelRotationZ, tintPhotoUrl: settings.data.heroTintPhotoUrl });
   }, [settings.data]);
 
   const valid = HEX.test(accent) && (secondary === null || HEX.test(secondary)) &&
@@ -116,7 +116,9 @@ export function SettingsView() {
       secondary !== settings.data!.secondaryColor ||
       secondaryText !== settings.data!.secondaryTextColor ||
       model.url !== settings.data!.heroModelUrl ||
+      model.rotationX !== settings.data!.heroModelRotationX ||
       model.rotationY !== settings.data!.heroModelRotationY ||
+      model.rotationZ !== settings.data!.heroModelRotationZ ||
       model.tintPhotoUrl !== settings.data!.heroTintPhotoUrl ||
       BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]) ||
       BOX_CHECKS.some(({ key }) => box[key] !== settings.data![key]));
@@ -142,7 +144,7 @@ export function SettingsView() {
       heroBoxCheckDark: preset.heroBoxCheckDark,
       heroBoxNumberColor: preset.heroBoxNumberColor,
     });
-    setModel({ url: preset.heroModelUrl, name: preset.heroModelName, rotationY: preset.heroModelRotationY, tintPhotoUrl: preset.heroTintPhotoUrl });
+    setModel({ url: preset.heroModelUrl, name: preset.heroModelName, rotationX: preset.heroModelRotationX, rotationY: preset.heroModelRotationY, rotationZ: preset.heroModelRotationZ, tintPhotoUrl: preset.heroTintPhotoUrl });
     setNotice(`Loaded "${preset.name}" — press Save to put it on the shop.`);
   }
 
@@ -153,7 +155,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/hero-presets", {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), heroModelUrl: model.url, heroModelName: model.name, heroModelRotationY: model.rotationY, heroTintPhotoUrl: model.tintPhotoUrl, ...box }),
+        body: JSON.stringify({ name: name.trim(), heroModelUrl: model.url, heroModelName: model.name, heroModelRotationX: model.rotationX, heroModelRotationY: model.rotationY, heroModelRotationZ: model.rotationZ, heroTintPhotoUrl: model.tintPhotoUrl, ...box }),
       });
       setNotice(`Saved the preset "${name.trim()}".`);
       await presets.reload();
@@ -185,7 +187,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, heroModelRotationY: model.rotationY, heroTintPhotoUrl: model.tintPhotoUrl, ...box }),
+        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, heroModelRotationX: model.rotationX, heroModelRotationY: model.rotationY, heroModelRotationZ: model.rotationZ, heroTintPhotoUrl: model.tintPhotoUrl, ...box }),
       });
       setNotice("Saved — the storefront updates within a few seconds.");
       await settings.reload();
@@ -232,16 +234,6 @@ export function SettingsView() {
       {failure && <ErrorState message={failure} />}
       {settings.error && <ErrorState message={`Could not load settings (${settings.error}).`} />}
 
-      {/* The live preview, above the controls rather than beside them: it is
-          the thing being edited, and the colour pickers are how you edit it.
-
-          It is an iframe of the storefront rendering itself with the chosen
-          colours, not swatches drawn here. Deriving the palette a second time
-          in the admin would mean two implementations of both the colour maths
-          and the shop's styling, and a preview that can disagree with the shop
-          is worse than no preview at all. The trade is that it needs the
-          storefront to be reachable — which, if it isn't, is worth knowing
-          before changing the theme anyway. */}
       <div className="mt-4 overflow-hidden rounded-xl border border-border">
         <div className="flex items-center justify-between border-b border-border bg-secondary/40 px-4 py-2">
           <p className="text-xs font-medium text-muted-foreground">
@@ -337,10 +329,6 @@ export function SettingsView() {
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              {/* Derived is the default and deliberately first: most shops
-                  never need to touch this, and the automatic complement is a
-                  better answer than a colour picked without reference to the
-                  accent. */}
               <button
                 type="button"
                 onClick={() => setSecondary(null)}
@@ -442,10 +430,6 @@ export function SettingsView() {
               {model.url ? (
                 <>
                   <p className="break-all font-medium text-foreground">{model.name ?? "Custom model"}</p>
-                  {/* `truncate` needs a width to truncate against, and inside
-                      a grid item that width is the content's own — so a long
-                      Storage URL just widened the card and pushed itself past
-                      the edge. `break-all` wraps it instead. */}
                   <p className="break-all font-mono text-[11px] text-muted-foreground">{model.url}</p>
                 </>
               ) : (
@@ -472,16 +456,45 @@ export function SettingsView() {
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="hero-model-rotation">Rotation (Y°)</Label>
-              <Input
-                id="hero-model-rotation"
-                type="number"
-                min={-180}
-                max={180}
-                step={1}
-                value={model.rotationY}
-                onChange={(event) => setModel((current) => ({ ...current, rotationY: Number(event.target.value) || 0 }))}
-              />
+              <Label>Rotation (°)</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="grid gap-1">
+                  <Label htmlFor="hero-model-rotation-x" className="text-[11px] font-normal text-muted-foreground">X</Label>
+                  <Input
+                    id="hero-model-rotation-x"
+                    type="number"
+                    min={-180}
+                    max={180}
+                    step={1}
+                    value={model.rotationX}
+                    onChange={(event) => setModel((current) => ({ ...current, rotationX: Number(event.target.value) || 0 }))}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="hero-model-rotation-y" className="text-[11px] font-normal text-muted-foreground">Y</Label>
+                  <Input
+                    id="hero-model-rotation-y"
+                    type="number"
+                    min={-180}
+                    max={180}
+                    step={1}
+                    value={model.rotationY}
+                    onChange={(event) => setModel((current) => ({ ...current, rotationY: Number(event.target.value) || 0 }))}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="hero-model-rotation-z" className="text-[11px] font-normal text-muted-foreground">Z</Label>
+                  <Input
+                    id="hero-model-rotation-z"
+                    type="number"
+                    min={-180}
+                    max={180}
+                    step={1}
+                    value={model.rotationZ}
+                    onChange={(event) => setModel((current) => ({ ...current, rotationZ: Number(event.target.value) || 0 }))}
+                  />
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">A fixed turn applied before the idle swing — for a model exported facing the wrong way or lying on its side.</p>
             </div>
 
@@ -494,7 +507,7 @@ export function SettingsView() {
             />
 
             {model.url && (
-              <Button type="button" variant="ghost" size="sm" className="justify-self-start" onClick={() => setModel({ url: null, name: null, rotationY: 0, tintPhotoUrl: null })}>
+              <Button type="button" variant="ghost" size="sm" className="justify-self-start" onClick={() => setModel({ url: null, name: null, rotationX: 0, rotationY: 0, rotationZ: 0, tintPhotoUrl: null })}>
                 Go back to the built-in model
               </Button>
             )}
@@ -516,9 +529,6 @@ export function SettingsView() {
             </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            {/* Presets sit above the fields they fill, because switching
-                figure is the common task and editing eight values by hand is
-                the rare one. */}
             <div className="sm:col-span-2 rounded-lg border border-input p-3">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium text-foreground">Presets</p>

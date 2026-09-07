@@ -58,9 +58,6 @@ export function GalleryField({
         </ul>
       )}
 
-      {/* Value stays empty so this reads as "add", and the field clears itself
-          after each pick — otherwise the last-added photo would sit in the box
-          looking like it hadn't been added. */}
       <ImageField
         id="product-gallery-add"
         label="Add another photo"

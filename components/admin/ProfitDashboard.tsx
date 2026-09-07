@@ -24,7 +24,7 @@ const CHART_DAYS = 30;
 const toRupees = (paise: number) => Math.round(paise / 100);
 
 function dayKey(iso: string) {
-  return iso.slice(0, 10); // "YYYY-MM-DD"
+  return iso.slice(0, 10);
 }
 
 function useProfitFigures(productList: Product[], orderList: Order[]) {

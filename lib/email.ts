@@ -42,7 +42,7 @@ export async function sendOrderConfirmation(orderId: string): Promise<boolean> {
       where: { id: orderId, confirmationSentAt: null },
       data: { confirmationSentAt: new Date() },
     });
-    if (claim.count === 0) return false; // already sent, or being sent right now
+    if (claim.count === 0) return false;
     claimed = true;
 
     const order = await prisma.order.findUnique({

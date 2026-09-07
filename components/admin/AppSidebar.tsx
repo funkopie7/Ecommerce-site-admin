@@ -90,7 +90,6 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            {/* One click from the back office to the shop it drives. */}
             <SidebarMenuButton asChild tooltip="View storefront">
               <a href={STORE_URL} target="_blank" rel="noreferrer">
                 <ExternalLink />
@@ -99,8 +98,6 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            {/* There are no per-admin accounts — access is a single shared key —
-                so the identity block states that rather than inventing a user. */}
             <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent">
               <Avatar>
                 <AvatarFallback className="bg-secondary text-secondary-foreground">

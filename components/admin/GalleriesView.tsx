@@ -221,9 +221,6 @@ export function GalleriesView() {
                       </div>
                     )}
 
-                    {/* Rendered only for the row being edited. One ImageField
-                        per product would mount several hundred file inputs and
-                        picker dialogs at once. */}
                     {adding === product.id && (
                       <div className="mt-3 border-t border-border pt-3">
                         <ImageField
@@ -246,11 +243,6 @@ export function GalleriesView() {
                 ))}
               </div>
 
-              {/* The observer target, plus a plain button behind it. The
-                  observer never fires where IntersectionObserver is missing or
-                  where the list is short enough not to scroll, and a list that
-                  silently stops at row 24 with no way forward is worse than a
-                  button nobody needs to press. */}
               {shown < matches.length && (
                 <div ref={sentinel} className="mt-4 flex justify-center">
                   <Button variant="ghost" size="sm" onClick={() => setShown((current) => current + PAGE)}>

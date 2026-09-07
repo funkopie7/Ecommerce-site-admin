@@ -141,10 +141,6 @@ export function QuickProductDialog({
             <div className="grid gap-1.5">
               <Label htmlFor="quick-product-category">Category</Label>
               <div className="flex gap-1.5">
-                {/* Radix Select's items only mount once the popup has opened, so a
-                    value set programmatically (quick-created category) briefly
-                    finds no matching item and self-corrects with an empty
-                    onValueChange — guarded against here. */}
                 <Select value={categoryId} onValueChange={(value) => value && setCategoryId(value)}>
                   <SelectTrigger id="quick-product-category">
                     <SelectValue placeholder="Choose a category" />
@@ -236,7 +232,6 @@ export function QuickProductDialog({
 
           <ImageField id="quick-product-image" label="Image" value={imageUrl} onChange={setImageUrl} />
 
-          {/* Featured replaces the badge picker — see ProductDialog. */}
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"

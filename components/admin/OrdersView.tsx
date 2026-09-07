@@ -212,8 +212,6 @@ export function OrdersView() {
       {notice && <Notice message={notice} onDismiss={() => setNotice("")} />}
       {orders.error && <ErrorState message={`Could not load orders (${orders.error}).`} />}
 
-      {/* An empty table under a failed fetch reads as "no rows exist", so the
-          table is withheld until the data actually loads. */}
       {!orders.error && (
         <DataTable
           rows={rows}

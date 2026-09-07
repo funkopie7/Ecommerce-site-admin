@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(created, { status: 201 });
     } catch (cause) {
       const collided = cause instanceof Prisma.PrismaClientKnownRequestError && cause.code === "P2002";
-      if (collided && (cause.meta?.target as string[] | undefined)?.includes("sku")) continue; // another create just took this number — try the next one
+      if (collided && (cause.meta?.target as string[] | undefined)?.includes("sku")) continue;
       return error(collided ? "Slug must be unique" : "Could not create that product", 409);
     }
   }

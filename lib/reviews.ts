@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 export type ReviewSummary = {
-  average: number;   // 0 when there are none — callers show "no reviews yet"
+  average: number;
   count: number;
   distribution: Record<1 | 2 | 3 | 4 | 5, number>;
 };

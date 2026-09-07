@@ -26,9 +26,9 @@ it("requires sign-in", async () => {
 });
 
 it("quotes the server-computed cart total to Razorpay, in paise, not a client-supplied amount", async () => {
-  const response = await post({ addressId: "addr1", amount: 1 }); // a forged/wrong amount, if it were ever read, would be 1
+  const response = await post({ addressId: "addr1", amount: 1 });
   expect(response.status).toBe(200);
-  expect(createRazorpayOrder).toHaveBeenCalledWith(10000, "INR", expect.any(String)); // 5000 * 2, not 1
+  expect(createRazorpayOrder).toHaveBeenCalledWith(10000, "INR", expect.any(String));
   expect(await response.json()).toMatchObject({ razorpayOrderId: "order_razorpay1", amount: 10000, currency: "INR" });
 });
 

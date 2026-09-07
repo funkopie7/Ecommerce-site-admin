@@ -454,7 +454,9 @@ model HeroPreset {
   name String @unique
   heroModelUrl String?
   heroModelName String?
+  heroModelRotationX Float @default(0)
   heroModelRotationY Float @default(0)
+  heroModelRotationZ Float @default(0)
   heroTintPhotoUrl String?
   heroBoxLine String @default("ANIMATION")
   heroBoxNumber String @default("1000")
@@ -485,7 +487,9 @@ model StoreSettings {
   secondaryTextColor String?
   heroModelUrl String?
   heroModelName String?
+  heroModelRotationX Float @default(0)
   heroModelRotationY Float @default(0)
+  heroModelRotationZ Float @default(0)
   heroTintPhotoUrl String?
   /* The words printed on the hero's POP! box. The artwork is drawn in code
      rather than shipped as an image, and every line of it was hardcoded to

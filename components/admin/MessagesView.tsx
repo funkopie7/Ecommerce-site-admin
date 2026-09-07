@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { CheckCircle2, ImagePlus, RotateCcw, Send, X } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
@@ -100,11 +101,13 @@ export function MessagesView() {
             <ul className="max-h-[620px] divide-y divide-border overflow-y-auto">
               {rows.map((row) => (
                 <li key={row.id}>
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedId(row.id)}
+                    onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedId(row.id); } }}
                     className={cn(
-                      "flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-secondary/60",
+                      "flex w-full cursor-pointer flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-secondary/60",
                       selectedId === row.id && "bg-secondary",
                     )}
                   >
@@ -117,9 +120,13 @@ export function MessagesView() {
                       </span>
                     </div>
                     {row.product && (
-                      <span className="truncate font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                      <Link
+                        href={`/products?id=${row.product.id}`}
+                        onClick={(event) => event.stopPropagation()}
+                        className="truncate font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+                      >
                         re: {row.product.name}
-                      </span>
+                      </Link>
                     )}
                     <div className="flex items-center justify-between gap-2">
                       <span className="min-w-0 truncate text-xs text-muted-foreground">
@@ -136,7 +143,7 @@ export function MessagesView() {
                         )}
                       </span>
                     </div>
-                  </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -263,7 +270,14 @@ function ThreadPane({
           </p>
           <p className="truncate text-xs text-muted-foreground">
             {thread?.customer.email}
-            {thread?.product ? ` · about ${thread.product.name}` : ""}
+            {thread?.product ? (
+              <>
+                {" · about "}
+                <Link href={`/products?id=${thread.product.id}`} className="underline decoration-dotted underline-offset-2 hover:text-foreground">
+                  {thread.product.name}
+                </Link>
+              </>
+            ) : null}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

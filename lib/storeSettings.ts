@@ -10,7 +10,9 @@ export type PublicSettings = {
   secondaryTextColor: string | null;
   heroModelUrl: string | null;
   heroModelName: string | null;
+  heroModelRotationX: number;
   heroModelRotationY: number;
+  heroModelRotationZ: number;
   heroTintPhotoUrl: string | null;
   heroBoxLine: string;
   heroBoxNumber: string;
@@ -27,7 +29,7 @@ export async function getStoreSettings(): Promise<PublicSettings> {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID },
     update: {},
-    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationY: true, heroTintPhotoUrl: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
+    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationX: true, heroModelRotationY: true, heroModelRotationZ: true, heroTintPhotoUrl: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
   });
   return row;
 }

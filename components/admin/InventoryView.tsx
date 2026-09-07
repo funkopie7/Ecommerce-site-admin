@@ -153,8 +153,6 @@ export function InventoryView() {
         <ErrorState message={`Could not load stock levels (${products.error}).`} />
       )}
 
-      {/* An empty table under a failed fetch reads as "no rows exist", so the
-          table is withheld until the data actually loads. */}
       {!products.error && (
         <DataTable
           rows={rows}
