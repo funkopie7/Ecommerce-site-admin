@@ -1,4 +1,3 @@
-// app/api/admin/conversations/[id]/messages/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
 const { db } = vi.hoisted(() => {
   const db = {
@@ -25,8 +24,6 @@ it("appends an admin reply without touching the status", async () => {
   expect(db.conversation.update).toHaveBeenCalledWith({ where: { id: "c1" }, data: { lastMessageAt: new Date("2026-08-29T10:00:00Z") } });
 });
 
-/* Support answers with pictures too — a photo of the replacement on the shelf
-   settles a question no paragraph would. */
 it("accepts an attachment, with or without a caption", async () => {
   expect((await post({ imageUrl: photo })).status).toBe(201);
   expect(db.message.create).toHaveBeenCalledWith({ data: { conversationId: "c1", sender: "ADMIN", body: "", imageUrl: photo } });

@@ -13,13 +13,6 @@ const input = z.object({
   razorpaySignature: z.string(),
 });
 
-/** Step 2 of the Razorpay flow: verifies the signature Razorpay's checkout
- * modal handed back, and only then fulfils the PaymentIntent /razorpay-order
- * created — a forged or missing signature never reaches the database as a
- * paid order. addressId isn't taken from this request at all: it comes from
- * the PaymentIntent (captured at quote time), so this endpoint can't be
- * used to redirect a paid-for order to a different address than the one
- * quoted. */
 export async function POST(request: NextRequest) {
   const session = await customerFromRequest(request);
   if (!session) return error("Sign in required", 401);
@@ -40,13 +33,9 @@ export async function POST(request: NextRequest) {
       fulfillPaymentIntent(tx, razorpayOrderId, { method: "RAZORPAY", note: `${razorpayOrderId}/${razorpayPaymentId}` }),
     );
     if (!result.alreadyFulfilled) {
-      // Outside the transaction, and after the payment is already recorded.
       if (result.order?.id) await sendOrderConfirmation(result.order.id);
       return NextResponse.json(result.order, { status: 201 });
     }
-    // The payment.captured webhook already fulfilled this intent (a race
-    // this endpoint lost, or it simply arrived first) — the payment is
-    // just as real either way, so this returns the same order, not an error.
     const order = result.orderId ? await prisma.order.findUnique({ where: { id: result.orderId } }) : null;
     return order ? NextResponse.json(order, { status: 200 }) : NextResponse.json({ ok: true }, { status: 202 });
   } catch (caught) {

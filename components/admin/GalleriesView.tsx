@@ -13,20 +13,6 @@ import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
 import type { Product } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
-/* Every product's photos, product by product — and the place to change them.
-
-   The Images screen answers a storage question: what is in the bucket, is
-   anything unused, can it go. This answers the merchandising one — which
-   figures have a gallery worth browsing, which are still on a single photo,
-   and which photo leads. The product form can do all this too, one figure at
-   a time, but working through a catalogue that way means opening and closing
-   a dialog several hundred times.
-
-   The three roles are kept disjoint: a photo is the main, or the hover, or in
-   the gallery, never two at once. Promoting one demotes whatever it replaced
-   into the gallery rather than dropping it, because the alternative is a
-   click that silently loses a photo. */
-
 type Role = "Main" | "Hover" | "Gallery";
 type Shot = { url: string; role: Role };
 
@@ -46,15 +32,10 @@ function shotsOf(product: Product): Shot[] {
   return shots;
 }
 
-/* The three fields as they should be after an action, derived from the whole
-   product rather than patched field by field — the demote-the-old-one rule is
-   easy to get subtly wrong when each is edited on its own. */
 export function afterPromote(product: Product, url: string, to: "Main" | "Hover") {
   const displaced = to === "Main" ? product.imageUrl : product.hoverImageUrl;
   const other = to === "Main" ? product.hoverImageUrl : product.imageUrl;
   const gallery = product.images.filter((image) => image !== url && image !== displaced);
-  // Whatever this replaced falls back into the gallery, unless it is already
-  // carrying the other role.
   if (displaced && displaced !== url && displaced !== other) gallery.push(displaced);
   return to === "Main"
     ? { imageUrl: url, hoverImageUrl: other === url ? null : product.hoverImageUrl, images: gallery }
@@ -91,18 +72,8 @@ export function GalleriesView() {
       .sort((a, b) => a.shots.length - b.shots.length || a.product.name.localeCompare(b.product.name));
   }, [all, query, onlyThin]);
 
-  // Reset the window when the filters change, or the count carries over from a
-  // long list into a much shorter one.
   React.useEffect(() => setShown(PAGE), [query, onlyThin]);
 
-  /* Loads the next page when the end of the list comes into view, instead of
-     asking for a click. `rootMargin` starts the next batch a screen early, so
-     scrolling stays continuous rather than stopping at a gap while thumbnails
-     decode.
-
-     Deliberately not virtualised: the rows are already rendered, and tearing
-     out rows above the viewport would break in-page find, which is how you
-     actually locate one figure among five hundred. This only grows the list. */
   React.useEffect(() => {
     const node = sentinel.current;
     if (!node || shown >= matches.length) return;
@@ -263,8 +234,6 @@ export function GalleriesView() {
                             if (!url || shotsOf(product).some((shot) => shot.url === url)) return;
                             const data = product.imageUrl
                               ? { images: [...product.images, url] }
-                              // Nothing set yet, so the first photo added becomes
-                              // the main one rather than an orphan in the gallery.
                               : { imageUrl: url };
                             void patch(product, data, `Photo added to ${product.name}.`);
                             setAdding(null);

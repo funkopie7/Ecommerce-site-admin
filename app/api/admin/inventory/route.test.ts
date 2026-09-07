@@ -1,4 +1,3 @@
-// app/api/admin/inventory/route.test.ts
 import { expect, it, vi } from "vitest";
 const findMany = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/prisma", () => ({ prisma: { inventoryAdjustment: { findMany } } }));

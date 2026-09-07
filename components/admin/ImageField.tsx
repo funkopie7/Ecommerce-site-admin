@@ -15,11 +15,6 @@ import { Label } from "@/components/ui/label";
 
 type UploadedImage = { name: string; url: string };
 
-/* fetch has no upload-progress signal — the browser hands it the whole
-   response only once the request completes — so a slow Supabase upload with
-   fetch just sits on "Uploading…" with no sense of whether it's moving.
-   XHR's upload.onprogress gives real bytes-sent/bytes-total, which is what
-   actually answers that. */
 function uploadFileWithProgress(url: string, file: File, onProgress: (percent: number) => void): Promise<{ url: string }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -39,13 +34,6 @@ function uploadFileWithProgress(url: string, file: File, onProgress: (percent: n
   });
 }
 
-/**
- * The one image field used everywhere the admin sets an imageUrl — products,
- * categories, collections. Three ways to a URL, all writing to the same
- * value/onChange pair so callers don't care which was used: upload a new
- * file (re-encoded to .webp server-side), pick one already sitting in
- * Storage from an earlier upload, or paste a URL directly.
- */
 export function ImageField({
   id,
   label,
@@ -73,7 +61,6 @@ export function ImageField({
     try {
       const { url } = await uploadFileWithProgress("/api/admin/uploads", file, setProgress);
       onChange(url);
-      // A picker already open should show the new file without reopening.
       setImages(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Upload failed");
@@ -164,11 +151,6 @@ export function ImageField({
                     setPickerOpen(false);
                   }}
                   aria-label="Use this image"
-                  /* A fixed pixel height on every cell, not aspect-square: a
-                     bare <button>'s own UA sizing can fight CSS aspect-ratio
-                     on a grid item, which is what made these overlap instead
-                     of sitting in even rows. A fixed height sidesteps that
-                     entirely — every row is exactly this tall regardless. */
                   className={`block h-28 w-full overflow-hidden rounded-md border transition-colors hover:border-primary ${
                     value === image.url ? "border-primary ring-2 ring-primary" : "border-input"
                   }`}

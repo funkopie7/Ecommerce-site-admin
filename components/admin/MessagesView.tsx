@@ -15,12 +15,6 @@ import {
 } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
-/* The support inbox. Two panes rather than the DataTable every other section
-   uses: a conversation is read and answered in place, so a row that opens a
-   thread beside it beats a row that navigates away and back.
-   Freshness is polling, not a socket — this repo has no realtime layer, and a
-   support desk that sees a new message within a few seconds is not worth one.
-   The list refetches every 6s; the open thread does too, on its own timer. */
 const LIST_POLL_MS = 6000;
 const THREAD_POLL_MS = 6000;
 
@@ -31,9 +25,6 @@ const FILTERS = [
 ] as const;
 type Filter = (typeof FILTERS)[number]["value"];
 
-/* Relative time, because "2m ago" is what tells an admin whether someone is
-   still sitting there waiting. Falls back to a date once that stops meaning
-   anything useful. */
 function ago(value: string) {
   const seconds = Math.max(0, (Date.now() - new Date(value).getTime()) / 1000);
   if (seconds < 60) return "just now";
@@ -46,8 +37,6 @@ function ago(value: string) {
 const clockTime = (value: string) =>
   new Date(value).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
-/* An attachment-only message has an empty body, so a preview that printed
-   `body` alone would render a row that looks like it has no message at all. */
 const preview = (message: { body: string; imageUrl: string | null }) =>
   message.body || (message.imageUrl ? "📷 Photo" : "");
 
@@ -62,10 +51,6 @@ export function MessagesView() {
   const rows = list.data ?? [];
   const waiting = rows.reduce((count, row) => count + (row.unread > 0 ? 1 : 0), 0);
 
-  /* A thread selected under one filter can vanish from the list when the filter
-     changes (or when it is closed). Clearing the selection then would throw the
-     admin out of a conversation they are mid-reply on, so the thread pane keeps
-     rendering the id it was given and the list simply stops highlighting it. */
   return (
     <div className="mx-auto w-full max-w-[1220px]">
       <PageHeader
@@ -174,9 +159,6 @@ function ThreadPane({
   const [thread, setThread] = React.useState<ConversationThread | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState("");
-  /* The picked attachment is held as an already-uploaded URL rather than a
-     File: the upload is what can be slow and can fail, so it happens on pick
-     and Send stays a single fast call that either works or doesn't. */
   const [attachment, setAttachment] = React.useState<string | null>(null);
   const [uploading, setUploading] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
@@ -193,9 +175,6 @@ function ThreadPane({
     }
   }, [conversationId]);
 
-  /* Selecting a different conversation must not leave the previous thread on
-     screen while the new one loads — that reads as "the reply went to the wrong
-     person". Blank it first, then fetch. */
   React.useEffect(() => {
     setThread(null);
     setDraft("");
@@ -206,16 +185,11 @@ function ThreadPane({
     return () => clearInterval(timer);
   }, [conversationId, load]);
 
-  /* Every load — including a poll that brought in a new customer message —
-     pins the view to the newest message, the way a chat window behaves. */
   React.useEffect(() => {
     const node = scroller.current;
     if (node) node.scrollTop = node.scrollHeight;
   }, [thread?.messages.length]);
 
-  /* Same shape as ProductDialog's product-photo upload, pointed at the chat
-     bucket: whatever comes off disk is re-encoded to .webp server-side and
-     comes back as the URL the message will carry. */
   async function attach(file: File) {
     setUploading(true);
     setError(null);
@@ -236,8 +210,6 @@ function ThreadPane({
   async function send(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const body = draft.trim();
-    /* Either half is a message on its own — a photo of the shelf answers some
-       questions better than a sentence would. */
     if ((!body && !attachment) || !conversationId) return;
     setBusy(true);
     try {
@@ -339,9 +311,6 @@ function ThreadPane({
               )}
             >
               {message.imageUrl && (
-                /* Opens full size in a tab rather than in a lightbox: the one
-                   thing an admin does with a customer's photo is look at it
-                   closely, and the browser's own viewer already does that. */
                 <a href={message.imageUrl} target="_blank" rel="noreferrer" className="block">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -409,7 +378,6 @@ function ThreadPane({
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
-            // Enter sends, shift+Enter breaks the line — what every chat does.
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
               event.currentTarget.form?.requestSubmit();

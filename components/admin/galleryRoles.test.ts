@@ -17,8 +17,6 @@ it("promotes a gallery photo and drops the old main back into the gallery", () =
   expect(afterPromote(product, "c", "Main")).toEqual({ imageUrl: "c", hoverImageUrl: "b", images: ["d", "a"] });
 });
 
-/* The whole point of the disjoint-roles rule: nothing may be silently lost by
-   a single click, and nothing may end up holding two roles at once. */
 it("never leaves a photo in two roles when the hover is promoted to main", () => {
   const product = make({ imageUrl: "a", hoverImageUrl: "b", images: ["c"] });
   const next = afterPromote(product, "b", "Main");
@@ -26,8 +24,6 @@ it("never leaves a photo in two roles when the hover is promoted to main", () =>
 });
 
 it("keeps the displaced photo out of the gallery when it already holds the other role", () => {
-  // Main and hover are the same file; promoting something else must not add
-  // that file to the gallery while it is still the hover.
   const product = make({ imageUrl: "a", hoverImageUrl: "a", images: ["b"] });
   expect(afterPromote(product, "b", "Main")).toEqual({ imageUrl: "b", hoverImageUrl: "a", images: [] });
 });

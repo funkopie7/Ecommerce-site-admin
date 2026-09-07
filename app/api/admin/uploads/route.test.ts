@@ -1,14 +1,5 @@
-// app/api/admin/uploads/route.test.ts
 import { expect, it, vi } from "vitest";
-/* sharp and the Storage PUT are the two things that must not really run; the
-   validation in lib/imageUploads is deliberately left real so these tests
-   still cover it. */
-/* The pipeline chains resize().webp().toBuffer(), so the mock has to be
-   chainable too — a stub missing resize() fails inside the route and surfaces
-   as a 500 rather than as the missing method it is. */
 vi.mock("sharp", () => {
-  // metadata() is part of the chain too: storeVariants reads the source width
-  // to decide whether a size would be an upscale.
   const chain = { resize: () => chain, webp: () => chain, toBuffer: async () => Buffer.from("fake-webp-bytes"), metadata: async () => ({ width: 1600, height: 1600 }) };
   return { default: () => chain };
 });
@@ -42,10 +33,6 @@ it("puts a product photo in the catalogue bucket, not the chat one", async () =>
   expect(uploadImage).toHaveBeenCalledWith(expect.anything(), expect.stringContaining(".webp"), "image/webp", "product-images");
 });
 
-/* The storefront's image loader asks for these three widths by name. If they
-   stop being generated it does not break — the loader falls back to the
-   full-size original — which is exactly why it needs a test: the page still
-   looks right while quietly serving five times the bytes. */
 it("generates the 320, 640 and 1280 variants beside a product photo", async () => {
   process.env.ADMIN_API_KEY = "test-key";
   uploadImage.mockClear();

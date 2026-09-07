@@ -1,7 +1,4 @@
-// app/api/customer/wishlist/[itemId]/route.test.ts
 import { expect, it, vi } from "vitest";
-/* vi.mock factories are hoisted above module-scope consts, so the shared spy
-   has to be created inside vi.hoisted to exist by the time the factory runs. */
 const { wishlistItem } = vi.hoisted(() => ({ wishlistItem: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) } }));
 vi.mock("@/lib/prisma", () => ({ prisma: { wishlist: { findUnique: vi.fn().mockResolvedValue({ id: "wl1", customerId: "cust1" }) }, wishlistItem } }));
 vi.mock("@/lib/auth", () => ({ customerFromRequest: vi.fn().mockResolvedValue({ customerId: "cust1", email: "a@b.com" }) }));
@@ -12,7 +9,6 @@ const remove = (itemId: string) => DELETE(new NextRequest(`http://localhost/api/
 
 it("removes an item from the caller's own shelf", async () => {
   expect((await remove("wi1")).status).toBe(200);
-  /* Ownership is a where-clause, never a client-supplied wishlist id. */
   expect(wishlistItem.deleteMany).toHaveBeenCalledWith({ where: { id: "wi1", wishlistId: "wl1" } });
 });
 

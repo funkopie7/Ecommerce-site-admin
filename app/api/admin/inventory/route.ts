@@ -4,7 +4,6 @@ import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { revalidateStorefront } from "@/lib/revalidateStorefront";
 
-/** The audit trail behind every adjustment above — newest first, capped at 200 since the Inventory page paginates it client-side like every other admin table. */
 export async function GET(request: NextRequest) {
   if (!(await requireAdmin(request))) return error("Administrator access required", 401);
   const adjustments = await prisma.inventoryAdjustment.findMany({

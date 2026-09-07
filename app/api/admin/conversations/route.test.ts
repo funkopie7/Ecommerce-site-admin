@@ -1,4 +1,3 @@
-// app/api/admin/conversations/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
 const { db } = vi.hoisted(() => ({ db: { conversation: { findMany: vi.fn().mockResolvedValue([]) }, message: { groupBy: vi.fn().mockResolvedValue([]) } } }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
@@ -16,8 +15,6 @@ it("lists every thread with its unread count", async () => {
   expect(await response.json()).toMatchObject([{ id: "c1", unread: 1, lastMessage: { body: "hi", sender: "CUSTOMER" } }]);
 });
 
-/* The inbox preview has to say *something* for a message that is only a photo,
-   or a row whose newest message is an image reads as an empty conversation. */
 it("carries the attachment through to the inbox preview", async () => {
   const photo = "https://example.supabase.co/storage/v1/object/public/chat-images/a.webp";
   db.conversation.findMany.mockResolvedValueOnce([{ id: "c1", status: "OPEN", customer: { id: "cust1", name: "Ansh", email: "a@b.com" }, messages: [{ body: "", imageUrl: photo, sender: "CUSTOMER", createdAt: new Date() }] }]);

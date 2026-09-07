@@ -17,15 +17,9 @@ import {
 
 import type { Route } from "next";
 
-// `experimental.typedRoutes` is on in next.config.ts, so Link's href is a
-// generated union of real routes rather than a plain string.
 export type NavItem = { title: string; url: Route; icon: LucideIcon };
 export type NavGroup = { label: string; items: NavItem[] };
 
-/**
- * The admin's information architecture: five groups, each collapsible in the
- * sidebar. Every URL below is a real route under app/(dashboard)/.
- */
 export const navGroups: NavGroup[] = [
   {
     label: "Overview",
@@ -51,10 +45,6 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    // Its own group rather than more entries under Sales: talking to shoppers
-    // is a different job from fulfilling orders. Messages is the screen an
-    // admin keeps open while doing something else; Reviews is the one they
-    // visit when something needs taking down.
     label: "Support",
     items: [
       { title: "Messages", url: "/messages", icon: MessageCircle },

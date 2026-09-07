@@ -7,19 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ImageField } from "@/components/admin/ImageField";
 
-/* The extra photos on a figure page, beyond the main and hover pair.
-
-   Product.images has existed all along and the storefront gallery renders it —
-   thumbnails, arrows, the full-screen view — but nothing in the admin could
-   put anything in it. The only images that ever got there were written
-   directly to the database by the catalogue import script, which meant the
-   feature looked broken for every product added since.
-
-   Order is meaningful: it is the order of the thumbnail strip and the order
-   the arrows step through, so these can be moved rather than only added and
-   removed. Adding reuses ImageField whole — upload, progress, and the "choose
-   existing" picker are all one component already, and giving it an empty value
-   turns it into an add control for free. */
 export function GalleryField({
   value,
   onChange,

@@ -3,10 +3,6 @@ import { error, requireAdmin } from "@/lib/api";
 import { UploadError, storeImageUpload } from "@/lib/imageUploads";
 import { PRODUCT_BUCKET, listImages } from "@/lib/uploads";
 
-/* Every product photo lands here as PNG/JPEG straight off someone's camera
-   or a stock download; the catalogue only ever needed the one seeded set
-   converted once (prisma/seed.ts). This is that same conversion made
-   self-serve: whatever comes in, a real .webp goes to Storage and out. */
 export async function POST(request: NextRequest) {
   if (!(await requireAdmin(request))) return error("Administrator access required", 401);
   try {
@@ -17,9 +13,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/* Backs the "choose existing" picker in ImageField — every product,
-   category and collection image lives in the same bucket, so whatever was
-   uploaded from any one of them is pickable from all three. */
 export async function GET(request: NextRequest) {
   if (!(await requireAdmin(request))) return error("Administrator access required", 401);
   try {

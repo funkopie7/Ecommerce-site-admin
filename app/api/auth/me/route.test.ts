@@ -1,4 +1,3 @@
-// app/api/auth/me/route.test.ts
 import { expect, it, vi, beforeEach } from "vitest";
 const { findUnique, update } = vi.hoisted(() => ({
   findUnique: vi.fn(),

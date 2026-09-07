@@ -72,8 +72,6 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
       categoryId: categories[0]?.id ?? "",
       imageUrl: "",
       hoverImageUrl: "",
-      // New figures start hidden-safe (see the dialog copy below) — check the
-      // box to launch immediately.
       visible: false,
       featured: false,
       images: [],
@@ -105,18 +103,6 @@ function draftFrom(product: Product | null, categories: Category[]): Draft {
   };
 }
 
-/**
- * Create/edit form for a product. The field set is exactly what
- * POST/PATCH /api/admin/products accept — see the note rendered in the footer
- * about the catalog-only fields (character, edition, release date) that the
- * schema stores but those routes do not yet take. Fandom (franchise) is the
- * exception among those: it drives the storefront's Fandom filter directly,
- * so it's editable here even though character/edition aren't yet.
- *
- * The Featured checkbox is the exception: it is a plain boolean on the
- * product, and it decides whether the figure shows in the homepage's
- * Featured drops row.
- */
 export function ProductDialog({
   open,
   onOpenChange,
@@ -129,7 +115,6 @@ export function ProductDialog({
   onOpenChange: (open: boolean) => void;
   product: Product | null;
   categories: Category[];
-  /** Fired after a quick-created category — reload the shared list; the dialog already selects it locally. */
   onCategoryCreated?: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -137,17 +122,12 @@ export function ProductDialog({
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [quickCategoryOpen, setQuickCategoryOpen] = React.useState(false);
-  // Holds a category created mid-dialog until the parent's reload lands it in
-  // `categories` for real — otherwise the Select would show a blank value.
   const [extraCategories, setExtraCategories] = React.useState<Category[]>([]);
   const categoryOptions = React.useMemo(
     () => [...categories, ...extraCategories.filter((extra) => !categories.some((category) => category.id === extra.id))],
     [categories, extraCategories],
   );
 
-  // `categories` deliberately isn't a dependency: quick-adding a category
-  // reloads the shared list while this dialog stays open, and re-running
-  // this reset on that reload would wipe out the categoryId it just set.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (open) {
@@ -166,8 +146,6 @@ export function ProductDialog({
     setError(null);
 
     const slug = draft.slug.trim() || slugify(draft.name);
-    // SKU is generated server-side (on create) and never edited here — see
-    // the note on the field below.
     const payload: Record<string, unknown> = {
       name: draft.name.trim(),
       slug,
@@ -187,10 +165,7 @@ export function ProductDialog({
     else if (product) payload.franchise = null;
     if (draft.compareAtPrice.trim()) payload.compareAtPrice = Math.round(Number(draft.compareAtPrice) * 100);
     else if (product) payload.compareAtPrice = null;
-    // The route validates imageUrl as a URL, so only send it when it is one.
     if (draft.imageUrl.trim()) payload.imageUrl = draft.imageUrl.trim();
-    // hoverImageUrl is nullable server-side, so an edit that clears it back
-    // to blank still has to send null rather than being silently dropped.
     if (draft.hoverImageUrl.trim()) payload.hoverImageUrl = draft.hoverImageUrl.trim();
     else if (product) payload.hoverImageUrl = null;
 
@@ -241,7 +216,6 @@ export function ProductDialog({
                   setDraft((current) => ({
                     ...current,
                     name,
-                    // Keep slug in lockstep until the user edits it themselves.
                     slug: current.slug === slugify(current.name) ? slugify(name) : current.slug,
                   }));
                 }}

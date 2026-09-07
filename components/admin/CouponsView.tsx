@@ -196,8 +196,6 @@ function CouponDialog({
     if (!open) return;
     setCode(coupon?.code ?? "");
     setType(coupon?.type ?? "PERCENT");
-    // The route stores FIXED in paise; the field shows rupees, same
-    // convention as ProductDialog's price field.
     setValue(coupon ? (coupon.type === "FIXED" ? (coupon.value / 100).toString() : coupon.value.toString()) : "");
     setMaxUses(coupon?.maxUses?.toString() ?? "");
     setExpiresAt(coupon?.expiresAt ? coupon.expiresAt.slice(0, 10) : "");

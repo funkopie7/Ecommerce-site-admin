@@ -17,12 +17,9 @@ import {
 } from "@/components/ui/table";
 
 export type Column<T> = {
-  /** Stable key; also the sort identity. */
   key: string;
   header: string;
-  /** Cell renderer. */
   cell: (row: T) => React.ReactNode;
-  /** Return a comparable value to make the column sortable. */
   sortValue?: (row: T) => string | number;
   className?: string;
   headClassName?: string;
@@ -32,22 +29,14 @@ type DataTableProps<T> = {
   rows: T[];
   columns: Column<T>[];
   getRowId: (row: T) => string;
-  /** Free-text haystack for the search box; omit to hide search. */
   searchIn?: (row: T) => string;
   searchPlaceholder?: string;
   pageSize?: number;
   loading?: boolean;
   emptyMessage?: string;
-  /** Rendered to the right of the search box. */
   toolbar?: React.ReactNode;
 };
 
-/**
- * Sortable, searchable, paginated table over an already-loaded array. The admin
- * lists are small (tens to low hundreds of rows), so filtering and paging
- * client-side keeps every interaction instant and avoids inventing query
- * parameters the existing API routes don't support.
- */
 export function DataTable<T>({
   rows,
   columns,
@@ -89,7 +78,6 @@ export function DataTable<T>({
   const currentPage = Math.min(page, pageCount);
   const visible = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  // Any change to the result set should return the reader to the first page.
   React.useEffect(() => setPage(1), [query, sort, rows]);
 
   function toggleSort(key: string) {

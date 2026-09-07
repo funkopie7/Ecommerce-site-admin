@@ -1,4 +1,3 @@
-// app/api/admin/settings/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
@@ -12,22 +11,11 @@ export async function GET(request: NextRequest) {
 }
 
 const input = z.object({
-  // Rejected here as well as in the form: the colour is interpolated into a
-  // stylesheet on the storefront, so anything but a hex value is a way to
-  // write CSS rather than pick a colour.
   accentColor: z.string().refine(isHexColor, "Enter a colour as a hex value, like #E8622A").optional(),
-  /* Nullable on purpose: clearing it is how you go back to the derived
-     complement, which is a different thing from picking a colour. */
   secondaryColor: z.string().refine(isHexColor, "Enter a colour as a hex value, like #6E8CA0").nullable().optional(),
-  // Nullable for the same reason: clearing it goes back to the automatic
-  // contrast pick rather than a literal colour.
   secondaryTextColor: z.string().refine(isHexColor, "Enter a colour as a hex value, like #FFFFFF").nullable().optional(),
   heroModelUrl: z.string().url().nullable().optional(),
   heroModelName: z.string().max(120).nullable().optional(),
-  /* Capped because they are drawn onto a fixed-width box face. The renderer
-     shrinks text to fit rather than clipping it, but past this length the
-     result is unreadable at hero size, so it is refused rather than drawn
-     illegibly. Empty is allowed and means "leave that line off the box". */
   heroBoxLine: z.string().max(40).optional(),
   heroBoxNumber: z.string().max(40).optional(),
   heroBoxBanner: z.string().max(40).optional(),
@@ -36,7 +24,6 @@ const input = z.object({
   heroBoxCheckLight: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
   heroBoxCheckDark: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
   heroBoxNumberColor: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
-
 
 });
 
@@ -51,8 +38,6 @@ export async function PATCH(request: NextRequest) {
     update: parsed.data,
     select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
   });
-  // The storefront caches these alongside the catalogue, so a theme change
-  // has to drop that cache or it would take an hour to appear.
   revalidateStorefront();
   return NextResponse.json(saved);
 }

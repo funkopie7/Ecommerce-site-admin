@@ -1,4 +1,3 @@
-// app/api/customer/checkout/razorpay-order/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -18,8 +17,6 @@ import { POST } from "./route";
 
 const post = (body: unknown) => POST(new NextRequest("http://localhost/api/customer/checkout/razorpay-order", { method: "POST", body: JSON.stringify(body) }));
 
-// clearAllMocks resets call history (not the mockResolvedValue defaults set
-// above), so each test's "not.toHaveBeenCalled" checks its own call only.
 beforeEach(() => vi.clearAllMocks());
 
 it("requires sign-in", async () => {

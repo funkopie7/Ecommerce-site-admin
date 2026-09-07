@@ -1,20 +1,5 @@
 import { prisma } from "@/lib/prisma";
 
-/* Transactional email, sent through Resend's REST API rather than its SDK —
-   it's one POST, and a dependency that wraps one POST is a dependency that
-   has to be kept current for nothing.
-
-   FROM has to be a domain the shop controls. The obvious choice, the owner's
-   Gmail address, cannot work: gmail.com publishes SPF authorising only
-   Google's servers and a DMARC record, so mail sent from anywhere else
-   claiming to be @gmail.com fails authentication and lands in spam — and no
-   provider will let you verify a domain you can't add DNS records to.
-   REPLY-TO is where that Gmail address belongs instead, so a customer
-   hitting reply still reaches an inbox that's actually read.
-
-   Every send is best-effort: a shop that can't email must still take orders.
-   Callers get `false` and a logged reason, never an exception. */
-
 const FROM = process.env.ORDER_EMAIL_FROM || "FunkoPie <orders@funkopie.in>";
 const REPLY_TO = process.env.ORDER_EMAIL_REPLY_TO || "funkopie7@gmail.com";
 const STORE_URL = process.env.NEXT_PUBLIC_STORE_URL || "https://www.funkopie.in";
@@ -22,10 +7,6 @@ const STORE_URL = process.env.NEXT_PUBLIC_STORE_URL || "https://www.funkopie.in"
 const money = (paise: number) =>
   `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-/* Anything interpolated into the HTML below is customer-controlled — their
-   name, an address they typed, a product title. Escaped here rather than
-   trusted, because an unescaped apostrophe or angle bracket in an address
-   line is enough to break the markup, quite apart from the injection. */
 const escape = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -34,8 +15,6 @@ type Address = { recipient?: string; line1?: string; line2?: string | null; city
 async function send(to: string, subject: string, html: string, text: string): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    // Not configured yet. Say so once, plainly, rather than throwing — the
-    // order itself is complete and valid without the email.
     console.warn("[email] RESEND_API_KEY not set — skipping", subject);
     return false;
   }
@@ -56,12 +35,6 @@ async function send(to: string, subject: string, html: string, text: string): Pr
   }
 }
 
-/* Claims the order, builds the email, sends it. The claim is a conditional
-   update: three different code paths can complete the same order (the COD
-   route, the Razorpay verify route, and the payment.captured webhook racing
-   it), and whichever gets the row first is the only one that sends. A claim
-   whose send then fails is released, so the next attempt can retry rather
-   than the order being permanently marked as emailed. */
 export async function sendOrderConfirmation(orderId: string): Promise<boolean> {
   let claimed = false;
   try {
@@ -76,10 +49,6 @@ export async function sendOrderConfirmation(orderId: string): Promise<boolean> {
       where: { id: orderId },
       include: { customer: true, items: { include: { product: true, collection: true } } },
     });
-    /* A walk-in sale has no linked account, so its receipt address lives on
-       the order itself. Registered customer first — that address is verified
-       by sign-in, where the typed-in one is whatever was read out at the
-       counter. */
     const to = order?.customer?.email ?? order?.customerEmail;
     if (!order || !to) {
       console.warn("[email] order confirmation skipped — no customer email for", orderId);
@@ -93,9 +62,6 @@ export async function sendOrderConfirmation(orderId: string): Promise<boolean> {
     if (!sent) throw new Error("send failed");
     return true;
   } catch (cause) {
-    /* Release the claim so this can be retried instead of the customer
-       silently never hearing from us — but only if we took it. If the claim
-       write itself is what failed, there's nothing to give back. */
     if (claimed) {
       await prisma.order.updateMany({ where: { id: orderId }, data: { confirmationSentAt: null } }).catch(() => {});
     }
@@ -141,8 +107,6 @@ function orderConfirmationHtml(order: OrderForEmail, address: Address | null): s
 
   const shipTo = addressBlock(address);
 
-  /* Tables and inline styles on purpose: email clients are still a decade
-     behind on layout, and Outlook in particular ignores most of a stylesheet. */
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:#FBF3E7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF3E7;padding:32px 16px">
@@ -183,8 +147,6 @@ function orderConfirmationHtml(order: OrderForEmail, address: Address | null): s
 </body></html>`;
 }
 
-/* A plain-text part isn't decoration: without one, spam filters score the
-   message worse and text-only clients get nothing readable. */
 function orderConfirmationText(order: OrderForEmail, address: Address | null): string {
   const lines = [
     `Order ${order.number} confirmed`,

@@ -1,4 +1,3 @@
-// app/api/admin/products/[id]/route.test.ts
 import { expect, it, vi } from "vitest";
 vi.mock("@/lib/prisma", () => ({ prisma: { product: { update: vi.fn().mockResolvedValue({ id: "p1", name: "Renamed" }), delete: vi.fn().mockResolvedValue({ id: "p1" }) } } }));
 import { NextRequest } from "next/server";

@@ -7,11 +7,6 @@ import { pricedCart, checkoutErrorResponse } from "@/lib/createOrder";
 
 const input = z.object({ couponCode: z.string().min(1) });
 
-/** Live preview for the checkout page's "Apply" button — prices the cart
- * with the code and reports the discount, without touching PaymentIntent or
- * Order at all. The real charge/order still reprices from scratch (see
- * razorpay-order and the COD route), so this is purely a UI convenience,
- * never the source of truth for what gets charged. */
 export async function POST(request: NextRequest) {
   const session = await customerFromRequest(request);
   if (!session) return error("Sign in required", 401);

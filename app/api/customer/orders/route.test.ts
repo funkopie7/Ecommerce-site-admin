@@ -1,4 +1,3 @@
-// app/api/customer/orders/route.test.ts
 import { expect, it, vi } from "vitest";
 vi.mock("@/lib/prisma", () => ({ prisma: { order: { findMany: vi.fn().mockResolvedValue([{ id: "o1", number: "MC-1" }]) } } }));
 vi.mock("@/lib/auth", () => ({ customerFromRequest: vi.fn().mockResolvedValue({ customerId: "cust1", email: "a@b.com" }) }));

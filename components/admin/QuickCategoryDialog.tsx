@@ -23,7 +23,6 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-/** Same fields as CategoriesView's create form, embedded so nothing needs a follow-up trip to the Categories page. */
 export function QuickCategoryDialog({
   open,
   onOpenChange,

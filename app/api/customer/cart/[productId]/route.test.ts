@@ -1,4 +1,3 @@
-// app/api/customer/cart/[productId]/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
 vi.mock("@/lib/prisma", () => ({
   prisma: {

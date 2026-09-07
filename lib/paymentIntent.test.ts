@@ -35,10 +35,6 @@ it("short-circuits without creating a second order when already FULFILLED", asyn
 });
 
 it("treats losing the atomic claim race the same as already-fulfilled, not an error", async () => {
-  // First lookup still reads CREATED (a concurrent caller hasn't committed
-  // yet from this transaction's view), but the updateMany claim itself
-  // matches 0 rows — Postgres's row lock means whoever gets here second
-  // loses cleanly rather than double-creating an order.
   const tx = makeTx({ status: "CREATED", orderId: null }, 0);
   tx.paymentIntent.findUnique
     .mockResolvedValueOnce({ customerId: "cust1", addressId: "addr1", status: "CREATED", orderId: null })

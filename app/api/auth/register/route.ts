@@ -13,10 +13,6 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.create({ data: { name: parsed.data.name, email: parsed.data.email.toLowerCase(), passwordHash: await bcrypt.hash(parsed.data.password, 12), cart: { create: {} } } });
     return customerCookie(NextResponse.json({ id: customer.id, name: customer.name, email: customer.email }, { status: 201 }), await createCustomerSession({ customerId: customer.id, email: customer.email }));
   } catch (cause) {
-    // Only a real unique-constraint hit on email means "already exists" — any
-    // other failure (a cold-starting DB connection, a transient timeout) was
-    // being mislabeled as that, which hid the actual problem from both the
-    // customer and whoever had to debug it.
     if (cause instanceof Prisma.PrismaClientKnownRequestError && cause.code === "P2002") {
       return error("An account with that email already exists", 409);
     }

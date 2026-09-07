@@ -18,9 +18,6 @@ import { orderStatusVariant } from "@/components/admin/orderStatus";
 import type { Order } from "@/components/admin/types";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
-/* Either a registered account or a walk-in reconstructed from the orders that
-   named them — see /api/admin/customers. `kind` is what separates the two, and
-   a walk-in has no account, so email can be missing. */
 type Customer = {
   id: string;
   name: string;
@@ -36,9 +33,6 @@ const formatDate = (value: string) =>
 
 export function CustomersView() {
   const customers = useAdminResource<Customer[]>("/api/admin/customers");
-  // Orders don't carry a customer id (only name/email), so the detail dialog
-  // matches registered customers on email — unique on the Customer model,
-  // unlike name — and walk-ins on the phone recorded against the order.
   const orders = useAdminResource<Order[]>("/api/admin/orders");
   const [viewing, setViewing] = React.useState<Customer | null>(null);
 
@@ -98,10 +92,6 @@ export function CustomersView() {
     },
   ];
 
-  /* A walk-in has no account for an order to point at, so its orders can only
-     be found the way the roster itself groups them — by the phone recorded on
-     the order, falling back to the name. Matching those by email would find
-     nothing, since that is exactly the field a walk-in usually lacks. */
   const viewingOrders = !viewing
     ? []
     : (orders.data ?? []).filter((order) =>

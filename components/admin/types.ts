@@ -1,15 +1,7 @@
-/**
- * Shapes returned by the existing /api/admin/* routes. These mirror the Prisma
- * models (prisma/schema.prisma) narrowed to the fields the routes actually
- * `include`, so the UI never reads a field the API doesn't send.
- */
-
 export type Coupon = {
   id: string;
   code: string;
   type: "PERCENT" | "FIXED";
-  // Whole percent for PERCENT, paise for FIXED — same convention as the
-  // route that writes it (see app/api/admin/coupons/route.ts).
   value: number;
   active: boolean;
   maxUses: number | null;
@@ -101,25 +93,18 @@ export type Order = {
   carrier: string | null;
   trackingCode: string | null;
   createdAt: string;
-  // Null for a manual/offline sale not tied to a registered account — see
-  // customerName/customerPhone, which carry the walk-in's details instead.
   customer: { name: string; email: string } | null;
   customerName: string | null;
   customerPhone: string | null;
-  /** Captured at checkout time, so it stays correct even if the address is later edited or deleted. Null for a manual sale with no delivery. */
   addressSnapshot: { phone: string; recipient: string; [key: string]: unknown } | null;
   items: { id: string; productId: string; name: string; sku: string; quantity: number; unitPrice: number; collectionId: string | null }[];
 };
-
-/* ---------- support chat ---------- */
 
 export const CONVERSATION_STATUSES = ["OPEN", "CLOSED"] as const;
 export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
 export type MessageSender = "CUSTOMER" | "ADMIN";
 
-/** `body` is "" on a message that is only an attachment — never both empty. */
 export type ChatMessage = { id: string; sender: MessageSender; body: string; imageUrl: string | null; createdAt: string };
-/** What /api/admin/conversations includes for product context — not a full Product. */
 export type ChatProduct = { id: string; name: string; slug: string; imageUrl: string | null };
 type ChatBase = {
   id: string;
@@ -130,13 +115,10 @@ type ChatBase = {
   product: ChatProduct | null;
 };
 
-/** Inbox row: the newest message flattened out, plus the unread-from-customer count. */
 export type ConversationRow = ChatBase & {
   lastMessage: { body: string; imageUrl: string | null; sender: MessageSender; createdAt: string } | null;
   unread: number;
 };
-/** Opened thread: the whole history, oldest first. */
 export type ConversationThread = ChatBase & { messages: ChatMessage[] };
 
-/** Threshold the previous dashboard used, kept so the numbers stay comparable. */
 export const LOW_STOCK_THRESHOLD = 10;

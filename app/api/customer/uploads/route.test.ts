@@ -1,11 +1,5 @@
-// app/api/customer/uploads/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
-/* The pipeline chains resize().webp().toBuffer(), so the mock has to be
-   chainable too — a stub missing resize() fails inside the route and surfaces
-   as a 500 rather than as the missing method it is. */
 vi.mock("sharp", () => {
-  // metadata() is part of the chain too: storeVariants reads the source width
-  // to decide whether a size would be an upscale.
   const chain = { resize: () => chain, webp: () => chain, toBuffer: async () => Buffer.from("fake-webp-bytes"), metadata: async () => ({ width: 1600, height: 1600 }) };
   return { default: () => chain };
 });
@@ -40,8 +34,6 @@ it("rejects a request with no file", async () => {
   expect((await POST(postWith(null))).status).toBe(400);
 });
 
-/* The gate is the whole point of a second route: the chat bucket is reachable
-   by any signed-in shopper, so a signed-out one must not get near it. */
 it("refuses a signed-out visitor", async () => {
   customerFromRequest.mockResolvedValue(null);
   expect((await POST(postWith(png()))).status).toBe(401);

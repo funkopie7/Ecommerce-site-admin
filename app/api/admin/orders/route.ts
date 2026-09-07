@@ -11,9 +11,6 @@ const manualOrderInput = z
     customerId: z.string().optional(),
     customerName: z.string().min(2).optional(),
     customerPhone: z.string().min(6).optional(),
-    /* Optional, and emptiable: the dialog sends "" when the field is left
-       blank, which .or(z.literal("")) accepts and the handler turns into null
-       rather than storing an empty string that later reads as an address. */
     customerEmail: z.string().email("Enter a valid email address, or leave it blank").optional().or(z.literal("")),
     items: z.array(z.object({ productId: z.string(), quantity: z.number().int().positive(), unitPrice: z.number().int().nonnegative().optional() })).min(1),
     amountPaid: z.number().int().nonnegative().default(0),
@@ -46,13 +43,6 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json(order);
 }
 
-/**
- * Manual/offline sale entry: the admin conducts some sales in person and
- * needs a real order on record for them, tied to an existing account or a
- * walk-in's name and phone. Mirrors the storefront checkout's stock check
- * and decrement, but skips the cart entirely — line items come straight
- * from the request.
- */
 export async function POST(request: NextRequest) {
   if (!(await requireAdmin(request))) return error("Administrator access required", 401);
   const parsed = manualOrderInput.safeParse(await request.json());
@@ -102,11 +92,6 @@ export async function POST(request: NextRequest) {
       return created;
     });
 
-    /* Outside the transaction, and best-effort: a counter sale is already
-       done and paid by the time this runs, so a mail failure must not turn
-       into a failed order. sendOrderConfirmation is a no-op when the order
-       carries no email at all, which is the normal case for a walk-in who
-       didn't give one. */
     await sendOrderConfirmation(order.id);
     return NextResponse.json(order, { status: 201 });
   } catch (cause) {

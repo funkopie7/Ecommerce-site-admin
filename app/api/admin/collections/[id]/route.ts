@@ -1,14 +1,9 @@
-// app/api/admin/collections/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { revalidateStorefront } from "@/lib/revalidateStorefront";
 
-/* compareAtPrice is nullable (not just optional): the admin UI clears it
-   explicitly when a bundle's discount is turned off, and omitted vs null
-   mean different things to Prisma's update — omitted leaves the column
-   alone, null actually clears it. */
 const collectionUpdate = z.object({ name: z.string().min(2).optional(), slug: z.string().min(2).optional(), description: z.string().optional(), imageUrl: z.string().url().optional(), price: z.number().int().nonnegative().optional(), compareAtPrice: z.number().int().nonnegative().nullable().optional(), visible: z.boolean().optional(), items: z.array(z.object({ productId: z.string(), quantity: z.number().int().positive().default(1) })).min(1).optional() });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

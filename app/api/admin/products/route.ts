@@ -10,13 +10,6 @@ const CONDITIONS = ["Mint", "Near Mint", "OOB"] as const;
 
 const productInput = z.object({ name: z.string().min(2), slug: z.string().min(2), description: z.string().min(10), price: z.number().int().nonnegative(), compareAtPrice: z.number().int().nonnegative().optional(), cost: z.number().int().nonnegative(), stockQuantity: z.number().int().nonnegative(), categoryId: z.string(), imageUrl: z.string().url().optional(), hoverImageUrl: z.string().url().optional(), visible: z.boolean().default(true), featured: z.boolean().optional(), images: z.array(z.string().url()).default([]), variantType: z.enum(VARIANT_TYPES).optional(), condition: z.enum(CONDITIONS).optional(), isPreorder: z.boolean().optional(), franchise: z.string().min(1).optional() });
 
-/**
- * SKU is generated, not typed: the product's first word, upper-cased, plus
- * the next free number for that word — "Gojo" then another "Gojo" gives
- * GOJO-1, GOJO-2. Retried on a unique-constraint hit rather than trusting a
- * single COUNT, since two admins creating the same-named product back to
- * back would otherwise race for the same number.
- */
 function skuPrefix(name: string): string {
   const word = name.trim().split(/\s+/)[0]?.toUpperCase().replace(/[^A-Z0-9]/g, "") ?? "";
   return word || "SKU";

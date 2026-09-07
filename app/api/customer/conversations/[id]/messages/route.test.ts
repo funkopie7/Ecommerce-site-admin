@@ -1,4 +1,3 @@
-// app/api/customer/conversations/[id]/messages/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
 const { db } = vi.hoisted(() => {
   const db = {
@@ -25,8 +24,6 @@ it("appends a customer reply and revives a closed thread", async () => {
 
 const photo = "https://example.supabase.co/storage/v1/object/public/chat-images/a.webp";
 
-/* "This is how it arrived" is a photo with nothing to add in words, so an
-   image alone has to be a whole message rather than needing filler text. */
 it("accepts a photo with no words at all", async () => {
   expect((await post({ imageUrl: photo })).status).toBe(201);
   expect(db.message.create).toHaveBeenCalledWith({ data: { conversationId: "c1", sender: "CUSTOMER", body: "", imageUrl: photo } });

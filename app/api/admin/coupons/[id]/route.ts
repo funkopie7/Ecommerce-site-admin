@@ -26,8 +26,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (type) data.type = type;
   if (expiresAt !== undefined) data.expiresAt = expiresAt ? new Date(expiresAt) : null;
   if (value !== undefined) {
-    // A bare value update needs to know which type it's being stored under —
-    // fetch the current type when the caller isn't also changing it.
     const currentType = type ?? (await prisma.coupon.findUnique({ where: { id }, select: { type: true } }))?.type;
     data.value = currentType === "FIXED" ? Math.round(value * 100) : value;
   }

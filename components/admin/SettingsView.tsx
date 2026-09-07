@@ -26,10 +26,6 @@ type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroM
 
 type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
 
-/* The box face is drawn in code, so these are the only words on it. Order
-   here matches the order they appear on the packaging, top to bottom, which
-   is the only arrangement that lets someone check their work against the
-   preview without hunting. */
 const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
   { key: "heroBoxLine", label: "POP! line", hint: "Printed under the POP! badge — Animation, Marvel, Games…" },
   { key: "heroBoxNumber", label: "Figure number", hint: "Top right corner." },
@@ -38,10 +34,6 @@ const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
   { key: "heroBoxSubtitle", label: "Nameplate subtitle", hint: "The smaller line under the name. Leave blank to omit it." },
 ];
 
-/* The checkerboard behind the figure, and the box's own sides. Separate from
-   the text fields because they are colours, not copy — and because they are
-   the one part of the artwork a shop is likely to change without changing the
-   model, to match a different franchise's packaging. */
 const BOX_CHECKS: { key: "heroBoxCheckLight" | "heroBoxCheckDark" | "heroBoxNumberColor"; label: string; hint: string }[] = [
   { key: "heroBoxCheckLight", label: "Check colour", hint: "The lighter square of the checkerboard." },
   { key: "heroBoxCheckDark", label: "Check shadow", hint: "The darker square, and the box's own sides." },
@@ -62,10 +54,6 @@ const DEFAULT_BOX: BoxLabels = {
 const DEFAULT_ACCENT = "#E8622A";
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
-/* A handful of presets rather than only a colour wheel. The storefront's
-   palette is warm — cream paper, brown ink — and a colour picked in isolation
-   can land somewhere that fights it. These are known to sit properly against
-   that background; the picker is still there for anything else. */
 const PRESETS = [
   { name: "Funko orange", value: "#E8622A" },
   { name: "Deep red", value: "#C1503A" },
@@ -75,8 +63,6 @@ const PRESETS = [
   { name: "Gold", value: "#C99031" },
 ];
 
-/* Cooler and quieter than the primary set: this colour's job is to sit beside
-   the accent without competing with it. */
 const SECONDARY_PRESETS = [
   { name: "Slate blue", value: "#6E8CA0" },
   { name: "Teal", value: "#3E8079" },
@@ -86,9 +72,6 @@ const SECONDARY_PRESETS = [
   { name: "Charcoal", value: "#5A5651" },
 ];
 
-/* Where the live preview comes from. It is the storefront rendering itself
-   with the chosen colours, not a mock-up drawn here — a preview that can
-   disagree with the shop is worse than none. */
 const STORE_URL = process.env.NEXT_PUBLIC_STORE_URL || "https://www.funkopie.in";
 
 export function SettingsView() {
@@ -135,10 +118,6 @@ export function SettingsView() {
       BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]) ||
       BOX_CHECKS.some(({ key }) => box[key] !== settings.data![key]));
 
-  /* Debounced so dragging the colour wheel doesn't reload the iframe on every
-     pixel of movement — the picker fires continuously while the pointer is
-     down. A quarter second is long enough to coalesce a drag and short enough
-     to still feel like it's following you. */
   const [previewColours, setPreviewColours] = React.useState({ accent, secondary, secondaryText });
   React.useEffect(() => {
     const timer = setTimeout(() => setPreviewColours({ accent, secondary, secondaryText }), 250);
@@ -149,9 +128,6 @@ export function SettingsView() {
     previewColours.secondary ? `&secondary=${encodeURIComponent(previewColours.secondary)}` : ""
   }${previewColours.secondaryText ? `&secondaryText=${encodeURIComponent(previewColours.secondaryText)}` : ""}`;
 
-  /* Applying loads the preset into the form but does NOT save it. The change
-     is visible in the preview above first, and Save is still the thing that
-     puts it on the shop — so trying a preset is free and reversible. */
   function applyPreset(preset: HeroPreset) {
     setBox({
       heroBoxLine: preset.heroBoxLine,
@@ -279,10 +255,6 @@ export function SettingsView() {
           </a>
         </div>
         <iframe
-          /* Keyed on the URL so a colour change swaps the frame rather than
-             navigating it — navigating would push an entry into the admin's
-             own history, and Back would then walk through every colour tried
-             instead of leaving the page. */
           key={previewSrc}
           src={previewSrc}
           title="Storefront theme preview"

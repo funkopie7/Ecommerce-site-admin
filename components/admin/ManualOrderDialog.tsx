@@ -29,19 +29,9 @@ type CustomerHit = {
   name: string;
   email: string | null;
   phone: string | null;
-  /* A walk-in has no Customer row, so it cannot be attached to an order the
-     way an account can. Picking one fills in the walk-in fields instead —
-     which is the useful thing anyway, since the alternative is retyping a
-     repeat customer's details from memory. */
   kind?: "account" | "walkin";
 };
 
-/**
- * For a sale conducted in person — over the phone, at a pop-up, cash in
- * hand. Either an existing registered customer or a walk-in's name and
- * phone; the products and quantities straight off the shelf; and how much
- * was actually paid right now, which can be less than the total.
- */
 export function ManualOrderDialog({
   open,
   onOpenChange,
@@ -97,7 +87,6 @@ export function ManualOrderDialog({
   }, [open]);
 
   React.useEffect(() => {
-    // One character is enough — the API searches from a single letter now.
     if (customerQuery.trim().length < 1) { setCustomerHits([]); return; }
     const timer = setTimeout(() => {
       adminFetch<CustomerHit[]>(`/api/admin/customers?q=${encodeURIComponent(customerQuery.trim())}`).then(setCustomerHits).catch(() => setCustomerHits([]));

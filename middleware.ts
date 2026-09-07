@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const allowedOrigin = () => process.env.NEXT_PUBLIC_STORE_URL || "";

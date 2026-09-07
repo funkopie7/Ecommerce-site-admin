@@ -6,11 +6,6 @@ import { AppSidebar } from "@/components/admin/AppSidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
-/**
- * The authenticated admin frame: persistent collapsible sidebar plus a sticky
- * strip carrying the collapse trigger. Rendered once from
- * app/(dashboard)/layout.tsx, so every admin route inherits it.
- */
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>

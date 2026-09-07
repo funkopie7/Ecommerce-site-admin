@@ -19,7 +19,6 @@ it("averages every published rating, not just the page being shown", async () =>
     { rating: 1, _count: { rating: 1 } },
   ]);
   const summary = await summarise("p1");
-  // (5*7 + 4*2 + 1) / 10 = 4.4
   expect(summary).toEqual({ average: 4.4, count: 10, distribution: { 1: 1, 2: 0, 3: 0, 4: 2, 5: 7 } });
 });
 

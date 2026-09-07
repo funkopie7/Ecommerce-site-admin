@@ -1,4 +1,3 @@
-// app/api/admin/categories/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";

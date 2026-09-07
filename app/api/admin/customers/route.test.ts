@@ -1,4 +1,3 @@
-// app/api/admin/customers/route.test.ts
 import { expect, it, vi, beforeEach } from "vitest";
 const { findMany, orderFindMany, queryRaw } = vi.hoisted(() => ({ findMany: vi.fn(), orderFindMany: vi.fn(), queryRaw: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ prisma: { customer: { findMany }, order: { findMany: orderFindMany }, $queryRaw: queryRaw } }));
@@ -11,7 +10,6 @@ beforeEach(() => {
   process.env.ADMIN_API_KEY = "test-key";
   findMany.mockReset().mockResolvedValue([{ id: "cust1", name: "Ansh", email: "a@b.com", phone: "9999999999" }]);
   orderFindMany.mockReset().mockResolvedValue([]);
-  // The ?q= path runs two raw queries: accounts, then walk-ins.
   queryRaw.mockReset()
     .mockResolvedValueOnce([{ id: "cust1", name: "Ansh", email: "a@b.com", phone: "+91 63019 24850" }])
     .mockResolvedValueOnce([]);
@@ -24,8 +22,6 @@ it("searches customers by name, email or phone", async () => {
   expect(await response.json()).toHaveLength(1);
 });
 
-/* A single letter used to return nothing, which in a shop whose customers all
-   share an initial made the picker look broken rather than strict. */
 it("searches from a single character", async () => {
   const request = new NextRequest("http://localhost/api/admin/customers?q=a", { headers: { "x-admin-key": "test-key" } });
   const body = await (await GET(request)).json();
@@ -39,8 +35,6 @@ it("returns nothing for an empty query, without hitting the database", async () 
   expect(queryRaw).not.toHaveBeenCalled();
 });
 
-/* Walk-ins have no Customer row, so the picker tags them and the dialog uses
-   one to prefill rather than to attach an order. */
 it("returns walk-ins alongside accounts, tagged", async () => {
   queryRaw.mockReset()
     .mockResolvedValueOnce([{ id: "cust1", name: "Ansh", email: "a@b.com", phone: null }])
@@ -62,8 +56,6 @@ it("returns the full roster when no q is given, for the Customers page", async (
   expect(body[0]).toMatchObject({ kind: "account", orders: 3 });
 });
 
-/* Walk-in sales create no Customer row at all, so before these they were
-   simply absent from the roster and unfindable by search. */
 it("includes walk-ins, collapsing repeat visits by phone into one customer", async () => {
   findMany.mockResolvedValue([]);
   orderFindMany.mockResolvedValue([
@@ -75,7 +67,6 @@ it("includes walk-ins, collapsing repeat visits by phone into one customer", asy
   expect(body).toHaveLength(2);
   const ansh = body.find((row: { phone: string }) => row.phone === "9820012345");
   expect(ansh).toMatchObject({ kind: "walkin", orders: 2, name: "Ansh Yadav" });
-  // The later sale is where they gave an email; the earlier one had none.
   expect(ansh.email).toBe("ansh@example.com");
 });
 

@@ -39,10 +39,6 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-/* Moderation, not approval: reviews are already live by the time they appear
-   here. Hiding takes one off the storefront and out of the average but keeps
-   it on this screen; deleting is for spam, and is the only action that frees
-   the customer's one-review-per-product slot. */
 export function ReviewsView() {
   const reviews = useAdminResource<Review[]>("/api/admin/reviews");
   const [notice, setNotice] = React.useState<string | null>(null);

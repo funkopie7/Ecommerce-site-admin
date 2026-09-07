@@ -2,20 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===========================================================
-   Mercury Commerce — "premium card" design tokens (v2)
-   Soft-shadow rounded cards, pill buttons, bold sans type.
-   Supersedes v1's editorial hairline/ledger-rule system.
-   Shared token system, admin/ops half. Component styling now
-   lives in Tailwind + shadcn/ui (see tailwind.config.ts, which
-   maps these tokens onto Tailwind's semantic colour slots via
-   the HSL mirror published below). The brand hex block is
-   byte-identical to the storefront's app/globals.css — do not
-   edit values here without updating both. (--max is the one
-   admin-only rhythm token kept alongside the shared set, since
-   it's still used to cap the dashboard content width.)
-   =========================================================== */
-
 :root {
   --cream: #FBF3E7;
   --paper: #FFFDF9;
@@ -46,26 +32,10 @@
   --font-sticker: "Caveat", cursive;
   --font-mono: var(--font-mono-loaded), "IBM Plex Mono", ui-monospace, monospace;
 
-  /* admin-only rhythm — not part of the shared token set, kept per this
-     file's original note: still used to cap the dashboard content width. */
   --max: 1220px;
 
   color-scheme: light;
 
-  /* -----------------------------------------------------------
-     shadcn/ui semantic slots — an HSL-triplet mirror of the brand
-     hexes above, so Tailwind (tailwind.config.ts) can compose them
-     with opacity modifiers. Derived, not invented:
-       --background  = a lighter --cream
-       --foreground  = --ink            (#3A2E22)
-       --primary     = --orange         (#D9743A)
-       --muted-fg    = --ink-soft       (#8A7A65)
-       --border      = --line           (#E8D9C3)
-       --destructive = --danger         (#C1503A)
-     The admin deliberately runs cooler and flatter than the
-     storefront: white cards, warm-neutral chrome, brand orange
-     reserved for primary actions and the active sidebar item.
-     ----------------------------------------------------------- */
   --background: 40 33% 98%;
   --foreground: 30 26% 18%;
   --card: 0 0% 100%;
@@ -99,7 +69,6 @@
   --sidebar-ring: 22 68% 54%;
 }
 
-/* ---------- reset ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
@@ -118,7 +87,6 @@ input, select { font: inherit; color: inherit; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 h1, h2, h3, p { margin: 0; }
 
-/* focus ring, everywhere, always */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -137,12 +105,6 @@ select:focus-visible,
   }
 }
 
-/* ---------- type scale ----------
-   Bricolage Grotesque (--font-display) carries headings; Plus Jakarta
-   Sans (--font-body) carries the dashboard chrome; IBM Plex Mono
-   (--font-mono) carries IDs, SKUs and figures. These element rules
-   sit at (0,0,1) specificity so any Tailwind utility class on a
-   heading still wins. */
 h1, h2, h3 {
   font-family: var(--font-display), sans-serif;
   font-weight: 700;

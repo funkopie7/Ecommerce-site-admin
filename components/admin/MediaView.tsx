@@ -14,12 +14,6 @@ type MediaImage = { name: string; url: string; size: number; createdAt: string |
 
 const formatSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
-/* The bucket, as a contact sheet.
-
-   Selection is limited to unused images by design: an image a product still
-   points at cannot be picked, so the delete button can never be aimed at
-   something the storefront needs. The API re-checks anyway, in case this page
-   has been open since before someone assigned one. */
 export function MediaView() {
   const media = useAdminResource<MediaImage[]>("/api/admin/media");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());

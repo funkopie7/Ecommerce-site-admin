@@ -1,4 +1,3 @@
-// app/api/admin/conversations/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { error, requireAdmin } from "@/lib/api";
@@ -12,8 +11,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const conversation = await prisma.conversation.findUnique({ where: { id }, include: { customer: { select: { id: true, name: true, email: true } }, product: productSummary, messages: fullThread } });
   if (!conversation) return error("Conversation not found", 404);
-  /* Mirror of the customer route: opening the thread is the read receipt, so
-     the inbox badge clears the moment someone actually looks at it. */
   await prisma.message.updateMany({ where: { conversationId: id, sender: "CUSTOMER", readByAdmin: false }, data: { readByAdmin: true } });
   return NextResponse.json(conversation);
 }

@@ -1,11 +1,5 @@
-// app/api/admin/uploads/chat/route.test.ts
 import { expect, it, vi } from "vitest";
-/* The pipeline chains resize().webp().toBuffer(), so the mock has to be
-   chainable too — a stub missing resize() fails inside the route and surfaces
-   as a 500 rather than as the missing method it is. */
 vi.mock("sharp", () => {
-  // metadata() is part of the chain too: storeVariants reads the source width
-  // to decide whether a size would be an upscale.
   const chain = { resize: () => chain, webp: () => chain, toBuffer: async () => Buffer.from("fake-webp-bytes"), metadata: async () => ({ width: 1600, height: 1600 }) };
   return { default: () => chain };
 });
@@ -30,9 +24,6 @@ it("sends an admin chat attachment to the chat bucket", async () => {
   expect(uploadImage).toHaveBeenCalledWith(expect.anything(), expect.stringContaining(".webp"), "image/webp", "chat-images");
 });
 
-/* Sizes are generated only for the catalogue bucket. A chat attachment is
-   never rendered through the storefront's image loader, so variants for one
-   would be storage nobody ever reads. */
 it("does not generate size variants for a chat attachment", async () => {
   process.env.ADMIN_API_KEY = "test-key";
   uploadImage.mockClear();

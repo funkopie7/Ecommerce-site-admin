@@ -39,16 +39,11 @@ export function ProductsView() {
   const [minPrice, setMinPrice] = React.useState("");
   const [maxPrice, setMaxPrice] = React.useState("");
 
-  // Alphabetical by name, not the API's updatedAt-desc order — otherwise a
-  // quick stock adjustment (which touches updatedAt) jumps the row to the
-  // top instead of leaving it where it was.
   const sortedByName = React.useMemo(
     () => [...(products.data ?? [])].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
     [products.data],
   );
 
-  // Price fields are rupees on screen but paise in the row, same conversion
-  // ProductDialog uses on the way in.
   const minPaise = minPrice.trim() ? Math.round(Number(minPrice) * 100) : undefined;
   const maxPaise = maxPrice.trim() ? Math.round(Number(maxPrice) * 100) : undefined;
 
@@ -65,8 +60,6 @@ export function ProductsView() {
     [sortedByName, categoryFilter, statusFilter, minPaise, maxPaise],
   );
 
-  // Same one-unit quick-adjust the Inventory page offers — kept here too so a
-  // stock nudge doesn't require leaving the product list to make it.
   async function adjustStock(product: Product, delta: number) {
     setAdjustingId(product.id);
     try {

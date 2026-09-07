@@ -441,8 +441,6 @@ const SidebarMenuButton = React.forwardRef<
         data-active={isActive}
         onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
           onClick?.(event);
-          // A tap on a nav item should dismiss the off-canvas sheet; on desktop
-          // the sidebar is persistent, so leave it alone.
           if (isMobile) setOpenMobile(false);
         }}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}

@@ -1,17 +1,6 @@
 import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
 
-/**
- * Funkopie Admin — Tailwind theme.
- *
- * The storefront's brand palette lives in app/globals.css as raw hex custom
- * properties (--cream, --ink, --orange, ...). shadcn/ui primitives expect
- * semantic `hsl(var(--token))` slots instead, so globals.css also publishes an
- * HSL-triplet mirror of that same palette (--background, --primary, ...) and
- * this config maps Tailwind's colour scale onto it. Net effect: the admin is a
- * real shadcn install, but every surface and accent it paints is a Funkopie
- * brand colour rather than shadcn's stock neutral gray.
- */
 const config: Config = {
   darkMode: ["class"],
   content: [

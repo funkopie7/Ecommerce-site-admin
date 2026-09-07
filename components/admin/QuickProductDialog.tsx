@@ -33,7 +33,6 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-/** Every field ProductDialog has, embedded so a bundle's new figure never needs a follow-up trip to the Products page. */
 export function QuickProductDialog({
   open,
   onOpenChange,
@@ -44,7 +43,6 @@ export function QuickProductDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: Category[];
-  /** Fired after a quick-created category — reload the shared list; the dialog already selects it locally. */
   onCategoryCreated?: () => void;
   onCreated: (product: Product) => void;
 }) {
@@ -57,22 +55,16 @@ export function QuickProductDialog({
   const [stockQuantity, setStockQuantity] = React.useState("0");
   const [imageUrl, setImageUrl] = React.useState("");
   const [featured, setFeatured] = React.useState(false);
-  // New figures start hidden-safe, same default the full form uses.
   const [visible, setVisible] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [quickCategoryOpen, setQuickCategoryOpen] = React.useState(false);
-  // Holds a category created mid-dialog until the parent's reload lands it in
-  // `categories` for real — otherwise the Select would show a blank value.
   const [extraCategories, setExtraCategories] = React.useState<Category[]>([]);
   const categoryOptions = React.useMemo(
     () => [...categories, ...extraCategories.filter((extra) => !categories.some((category) => category.id === extra.id))],
     [categories, extraCategories],
   );
 
-  // `categories` deliberately isn't a dependency: quick-adding a category
-  // reloads the shared list while this dialog stays open, and re-running
-  // this reset on that reload would wipe out the categoryId it just set.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (!open) return;
@@ -106,7 +98,6 @@ export function QuickProductDialog({
         visible,
         featured,
       };
-      // The route validates imageUrl as a URL, so only send it when it is one.
       if (imageUrl.trim()) payload.imageUrl = imageUrl.trim();
       const created = await adminFetch<Product>("/api/admin/products", {
         method: "POST",

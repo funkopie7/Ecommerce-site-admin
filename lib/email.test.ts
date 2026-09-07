@@ -37,7 +37,6 @@ it("sends once and stamps the order as claimed", async () => {
   const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
   expect(body).toMatchObject({ to: ["buyer@example.com"], reply_to: "funkopie7@gmail.com", subject: "Order MC-1042 confirmed" });
   expect(body.from).toContain("orders@funkopie.in");
-  // Money is stored in paise; it must not reach the customer that way.
   expect(body.text).toContain("₹2,499.00");
   expect(body.text).toContain("12 Marine Drive");
 });
@@ -57,7 +56,6 @@ it("releases the claim when the send fails, so it can be retried", async () => {
 it("never throws into the order flow when the database itself is unreachable", async () => {
   updateMany.mockRejectedValue(new Error("connection refused"));
   expect(await sendOrderConfirmation("order1")).toBe(false);
-  // Nothing was claimed, so nothing should have been released either.
   expect(updateMany).toHaveBeenCalledTimes(1);
 });
 
@@ -65,7 +63,6 @@ it("skips quietly when no API key is configured, rather than failing the order",
   vi.stubEnv("RESEND_API_KEY", "");
   expect(await sendOrderConfirmation("order1")).toBe(false);
   expect(fetch).not.toHaveBeenCalled();
-  // The claim is released, so configuring the key later lets a retry send.
   expect(updateMany).toHaveBeenLastCalledWith({ where: { id: "order1" }, data: { confirmationSentAt: null } });
 });
 

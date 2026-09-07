@@ -36,8 +36,6 @@ it("places an order when a coupon has taken the total to zero", async () => {
   expect(sendOrderConfirmation).toHaveBeenCalledWith("order1");
 });
 
-/* The hole this route used to be: it created a confirmed, fully-paid order
-   for any cart at all, with no payment involved. */
 it("refuses a cart that actually costs money", async () => {
   pricedCart.mockResolvedValue({ total: 429600, discount: 0, couponCode: null });
   const response = await post({ addressId: "addr1" });

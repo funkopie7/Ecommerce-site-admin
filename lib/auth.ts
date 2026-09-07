@@ -6,12 +6,6 @@ export type CustomerSession = { customerId: string; email: string };
 export async function createCustomerSession(session: CustomerSession) { return new SignJWT(session).setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("30d").sign(secret()); }
 export async function customerFromRequest(request: NextRequest): Promise<CustomerSession | null> { const token = request.cookies.get("customer_session")?.value; if (!token) return null; try { return (await jwtVerify(token, secret())).payload as unknown as CustomerSession; } catch { return null; } }
 export function customerCookie(response: NextResponse, token: string) { response.cookies.set("customer_session", token, { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 }); return response; }
-/* response.cookies.delete() doesn't repeat the SameSite=None/Secure this
-   cookie was set with — cross-origin (the storefront calling this API on a
-   different domain) needs that same attribute pair for the browser to even
-   accept the deletion, or it silently keeps the old cookie and sign-out
-   does nothing. maxAge: 0 with the identical attribute set is what actually
-   clears it. */
 export function clearCustomerCookie(response: NextResponse) { response.cookies.set("customer_session", "", { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 0 }); return response; }
 export async function createAdminSession() { return new SignJWT({ role: "admin" }).setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("12h").sign(secret()); }
 export async function adminSessionValid(token: string) { try { const payload = (await jwtVerify(token, secret())).payload; return payload.role === "admin"; } catch { return false; } }

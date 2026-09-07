@@ -222,9 +222,7 @@ function CollectionDialog({
   collection: Collection | null;
   products: Product[];
   categories: Category[];
-  /** Fired after a quick-created product — reload the shared list; the dialog already checks it locally. */
   onProductCreated?: () => void;
-  /** Fired after the quick-add-product dialog quick-creates a category — reload the shared list. */
   onCategoryCreated?: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -235,13 +233,10 @@ function CollectionDialog({
   const [discountPrice, setDiscountPrice] = React.useState("");
   const [hasDiscount, setHasDiscount] = React.useState(false);
   const [visible, setVisible] = React.useState(true);
-  /** productId -> quantity, for the products currently in the bundle. */
   const [items, setItems] = React.useState<Record<string, number>>({});
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [quickProductOpen, setQuickProductOpen] = React.useState(false);
-  // Holds a product created mid-dialog until the parent's reload lands it in
-  // `products` for real — otherwise the picker list wouldn't show it yet.
   const [extraProducts, setExtraProducts] = React.useState<Product[]>([]);
   const productOptions = React.useMemo(
     () => [...products, ...extraProducts.filter((extra) => !products.some((product) => product.id === extra.id))],
@@ -255,10 +250,6 @@ function CollectionDialog({
     setSlug(collection?.slug ?? "");
     setDescription(collection?.description ?? "");
     setImageUrl(collection?.imageUrl ?? "");
-    /* A compare-at price on the saved record is what "this bundle has a
-       discount" means — everything else about the discounted price lives
-       in `price` itself, which the fields below derive from `hasDiscount`
-       rather than storing separately. */
     setHasDiscount(Boolean(collection?.compareAtPrice));
     setDiscountPrice(collection?.compareAtPrice ? (collection.price / 100).toString() : "");
     setVisible(collection?.visible ?? true);
@@ -272,9 +263,6 @@ function CollectionDialog({
 
   const selected = Object.entries(items);
   const productById = React.useMemo(() => new Map(productOptions.map((product) => [product.id, product])), [productOptions]);
-  /* The bundle's honest, unavoidable reference point: what the same figures
-     cost bought one by one. Recomputed live as the picker below changes,
-     not something the admin can type over. */
   const itemsTotal = selected.reduce((total, [productId, quantity]) => total + (productById.get(productId)?.price ?? 0) * quantity, 0);
 
   function toggle(productId: string, checked: boolean) {
@@ -292,10 +280,6 @@ function CollectionDialog({
       setError("A collection needs at least one product.");
       return;
     }
-    /* With no discount, the bundle just sells at what the figures cost
-       apart — there's nothing to validate. With one, the whole point is
-       a lower number than that, so a discounted price that isn't actually
-       lower is rejected rather than saved as a silent no-op discount. */
     let priceRupees = itemsTotal / 100;
     if (hasDiscount) {
       priceRupees = Number(discountPrice || 0);
@@ -320,7 +304,6 @@ function CollectionDialog({
       visible,
       items: selected.map(([productId, quantity]) => ({ productId, quantity })),
     };
-    // The route validates imageUrl as a URL, so only send it when it is one.
     if (imageUrl.trim()) payload.imageUrl = imageUrl.trim();
 
     try {

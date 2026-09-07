@@ -1,4 +1,3 @@
-// app/api/admin/categories/[id]/route.test.ts
 import { expect, it, vi } from "vitest";
 vi.mock("@/lib/prisma", () => ({ prisma: { category: { update: vi.fn().mockResolvedValue({ id: "c1", name: "Renamed" }), delete: vi.fn().mockRejectedValue(new Error("FK")) } } }));
 import { NextRequest } from "next/server";

@@ -8,11 +8,6 @@ import { createRazorpayOrder, RazorpayApiError } from "@/lib/razorpay";
 
 const input = z.object({ addressId: z.string(), couponCode: z.string().optional() });
 
-/** Step 1 of the Razorpay flow: quotes the customer's own cart (never a
- * client-supplied amount) and opens a Razorpay order against it. Doesn't
- * touch our Order table yet — that only happens once the payment is made,
- * via whichever of /razorpay-verify or the payment.captured webhook claims
- * the PaymentIntent created here first (see lib/paymentIntent.ts). */
 export async function POST(request: NextRequest) {
   const session = await customerFromRequest(request);
   if (!session) return error("Sign in required", 401);
@@ -29,7 +24,6 @@ export async function POST(request: NextRequest) {
     const { message, status } = checkoutErrorResponse(caught);
     return error(message, status);
   }
-  // Razorpay rejects orders under 100 paise (₹1).
   if (total < 100) return error("Your bag total is too small to check out", 400);
 
   try {

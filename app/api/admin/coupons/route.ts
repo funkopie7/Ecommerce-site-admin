@@ -6,8 +6,6 @@ import { prisma } from "@/lib/prisma";
 const couponInput = z.object({
   code: z.string().min(2).regex(/^[A-Z0-9_-]+$/, "Code must be upper-case letters, digits, underscores or hyphens"),
   type: z.enum(["PERCENT", "FIXED"]),
-  // PERCENT is a whole percent (0-100); FIXED is rupees on the wire, stored
-  // as paise below — same convention the product price field uses.
   value: z.number().int().positive(),
   active: z.boolean().default(true),
   maxUses: z.number().int().positive().optional(),

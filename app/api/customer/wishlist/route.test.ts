@@ -1,7 +1,4 @@
-// app/api/customer/wishlist/route.test.ts
 import { expect, it, vi } from "vitest";
-/* vi.mock factories are hoisted above module-scope consts, so the shared spy
-   has to be created inside vi.hoisted to exist by the time the factory runs. */
 const { wishlistItem } = vi.hoisted(() => ({ wishlistItem: { findFirst: vi.fn(), create: vi.fn().mockResolvedValue({ id: "wi1" }) } }));
 vi.mock("@/lib/prisma", () => ({ prisma: {
   wishlist: { upsert: vi.fn().mockResolvedValue({ id: "wl1", customerId: "cust1" }), findUnique: vi.fn().mockResolvedValue({ id: "wl1", items: [] }) },

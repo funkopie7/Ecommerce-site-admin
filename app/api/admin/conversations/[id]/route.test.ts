@@ -1,4 +1,3 @@
-// app/api/admin/conversations/[id]/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
 const { db } = vi.hoisted(() => ({ db: { conversation: { findUnique: vi.fn(), update: vi.fn().mockResolvedValue({ id: "c1", status: "CLOSED" }) }, message: { updateMany: vi.fn() } } }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));

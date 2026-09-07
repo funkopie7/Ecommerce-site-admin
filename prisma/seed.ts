@@ -21,8 +21,6 @@ const CATEGORIES = [
 
 type CategoryKey = (typeof CATEGORIES)[number]["key"];
 
-/* Slugs retired by the honest-relabelling pass. Removed after the products
-   have been re-pointed at the new categories so nothing is orphaned. */
 const RETIRED_CATEGORY_SLUGS = ["anime-icons", "retro-arcade", "space-legends", "kaiju-club", "indie-artists", "mini-icons"];
 
 type Seed = {
@@ -45,7 +43,6 @@ type Seed = {
 };
 
 const PRODUCTS: Seed[] = [
-  /* ---------------- Anime ---------------- */
   {
     sku: "AIC-004",
     slug: "tanjiro-kamado",
@@ -127,7 +124,6 @@ const PRODUCTS: Seed[] = [
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1700909415800-6d2a5a83a234.jpg",
   },
 
-  /* ---------------- Marvel ---------------- */
   {
     sku: "AIC-002",
     slug: "spider-man-classic-suit",
@@ -167,7 +163,6 @@ const PRODUCTS: Seed[] = [
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1608697341777-80b7461d93c3.jpg",
   },
 
-  /* ---------------- DC ---------------- */
   {
     sku: "RAR-003",
     slug: "batman-caped-crusader",
@@ -205,7 +200,6 @@ const PRODUCTS: Seed[] = [
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1558679908-541bcf1249ff.jpg",
   },
 
-  /* ---------------- Star Wars ---------------- */
   {
     sku: "KJC-001",
     slug: "sandtrooper-desert-patrol",
@@ -243,7 +237,6 @@ const PRODUCTS: Seed[] = [
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1623039958673-08c3f4376009.jpg",
   },
 
-  /* ---------------- Movies & Cartoons ---------------- */
   {
     sku: "SPL-003",
     slug: "woody-toy-story",
@@ -299,7 +292,6 @@ const PRODUCTS: Seed[] = [
     imageUrl: "https://uzdrfxatgdevbtopriwo.supabase.co/storage/v1/object/public/product-images/photo-1767026916692-aa8f9cd220ef.jpg",
   },
 
-  /* ---------------- Custom Figures ---------------- */
   {
     sku: "MNI-002",
     slug: "hirono-cardboard-cargo",
@@ -459,11 +451,6 @@ const COLLECTIONS: CollectionSeed[] = [
   },
 ];
 
-/* The four badge codes the storefront shipped hardcoded. Seeding them with the
-   exact labels and tones the old FigureBadge PRESET map used keeps every
-   existing product looking identical once the storefront reads tags from the
-   database instead. Rotation is not here on purpose: it is a per-sticker
-   styling choice the storefront makes, not a property of the tag. */
 async function main() {
   const categoryIds = new Map<CategoryKey, string>();
   for (const category of CATEGORIES) {

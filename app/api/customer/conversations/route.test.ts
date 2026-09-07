@@ -1,9 +1,4 @@
-// app/api/customer/conversations/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
-/* vi.mock factories are hoisted above module-scope consts, so the shared spies
-   have to be created inside vi.hoisted to exist by the time the factory runs.
-   $transaction hands the callback the same mock client, which is enough here:
-   these tests are about validation and the session gate, not about atomicity. */
 const { db } = vi.hoisted(() => {
   const db = {
     conversation: { findMany: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: "c1" }), update: vi.fn().mockResolvedValue({ id: "c1", messages: [] }), findFirst: vi.fn() },
@@ -37,8 +32,6 @@ it("starts a thread with its opening message", async () => {
   expect(db.message.create).toHaveBeenCalledWith({ data: { conversationId: "c1", sender: "CUSTOMER", body: "Is this figure restocking?", imageUrl: null } });
 });
 
-/* A thread can also *begin* with a photo — the damaged-parcel case, where the
-   picture is the whole question. */
 it("starts a thread from a photo alone", async () => {
   const photo = "https://example.supabase.co/storage/v1/object/public/chat-images/a.webp";
   expect((await post({ imageUrl: photo })).status).toBe(201);

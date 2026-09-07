@@ -60,7 +60,6 @@ function StatCard({
   );
 }
 
-/** Local time of day, resolved after mount so the server and client markup agree. */
 function useGreeting() {
   const [greeting, setGreeting] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -98,9 +97,6 @@ export function DashboardView() {
   const openOrders = orderList.filter(
     (order) => order.status !== "DELIVERED" && order.status !== "CANCELLED",
   );
-  // The API exposes customers only through the orders they placed, so this is
-  // deliberately labelled "with orders" rather than presented as a total. A
-  // manual/walk-in sale has no registered customer.email to count here.
   const customersWithOrders = new Set(orderList.map((order) => order.customer?.email).filter((email): email is string => Boolean(email))).size;
   const unitsOnHand = productList.reduce((total, product) => total + product.stockQuantity, 0);
 

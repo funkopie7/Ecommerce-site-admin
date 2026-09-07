@@ -21,19 +21,12 @@ import type { Order, Product } from "@/components/admin/types";
 
 const CHART_DAYS = 30;
 
-/** rupees for chart axes/tooltips — the raw fields are paise, same as everywhere else in the admin. */
 const toRupees = (paise: number) => Math.round(paise / 100);
 
 function dayKey(iso: string) {
   return iso.slice(0, 10); // "YYYY-MM-DD"
 }
 
-/**
- * Orders don't snapshot a product's cost at sale time (only price), so profit
- * is computed against each product's *current* cost. If a product's cost was
- * edited after an order shipped, past profit shifts with it — the same
- * trade-off the storefront already accepts by not snapshotting cost.
- */
 function useProfitFigures(productList: Product[], orderList: Order[]) {
   return React.useMemo(() => {
     const costByProductId = new Map(productList.map((product) => [product.id, product.cost]));

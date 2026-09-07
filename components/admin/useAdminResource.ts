@@ -3,15 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/adminApi";
 
-/**
- * Minimal fetch-and-refetch hook for the admin's read endpoints. Deliberately
- * not react-query: the admin loads one list per page and refetches after a
- * mutation, so a cache layer would be weight without benefit.
- *
- * `pollMs` re-runs the fetch on an interval, for the one list that changes
- * without the admin touching anything — the support inbox, where a customer's
- * message has to surface without a manual refresh. Omitted everywhere else.
- */
 export function useAdminResource<T>(path: string, pollMs?: number) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);

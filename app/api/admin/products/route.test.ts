@@ -1,4 +1,3 @@
-// app/api/admin/products/route.test.ts
 import { expect, it, vi, beforeEach } from "vitest";
 const { count, create } = vi.hoisted(() => ({
   count: vi.fn(),

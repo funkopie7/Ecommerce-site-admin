@@ -1,4 +1,3 @@
-// app/api/customer/checkout/razorpay-verify/route.test.ts
 import { beforeEach, expect, it, vi } from "vitest";
 const { fulfillPaymentIntent } = vi.hoisted(() => ({
   fulfillPaymentIntent: vi.fn().mockResolvedValue({ alreadyFulfilled: false, order: { id: "order1", number: "MC-1", total: 10000 } }),

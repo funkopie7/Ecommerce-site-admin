@@ -70,11 +70,6 @@ export function OrdersView() {
 
   function changeStatus(order: Order, status: OrderStatus) {
     if (status === order.status) return;
-    // The route rejects a SHIPPED transition without a tracking code, so ask
-    // for one instead of letting the request fail. If the order already has a
-    // code on file (e.g. re-shipping after SHIPPED -> PACKED -> SHIPPED),
-    // resend that code instead of dropping it — the request body is what the
-    // API validates, not the stored record.
     if (status === "SHIPPED") {
       if (!order.trackingCode) {
         setShipping(order);
