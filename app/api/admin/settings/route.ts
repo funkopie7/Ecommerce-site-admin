@@ -16,6 +16,8 @@ const input = z.object({
   secondaryTextColor: z.string().refine(isHexColor, "Enter a colour as a hex value, like #FFFFFF").nullable().optional(),
   heroModelUrl: z.string().url().nullable().optional(),
   heroModelName: z.string().max(120).nullable().optional(),
+  heroModelRotationY: z.number().min(-180).max(180).optional(),
+  heroTintPhotoUrl: z.string().url().nullable().optional(),
   heroBoxLine: z.string().max(40).optional(),
   heroBoxNumber: z.string().max(40).optional(),
   heroBoxBanner: z.string().max(40).optional(),
@@ -36,7 +38,7 @@ export async function PATCH(request: NextRequest) {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID, ...parsed.data },
     update: parsed.data,
-    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
+    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationY: true, heroTintPhotoUrl: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
   });
   revalidateStorefront();
   return NextResponse.json(saved);

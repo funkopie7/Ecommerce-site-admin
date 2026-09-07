@@ -1,0 +1,4 @@
+ALTER TABLE "StoreSettings" ADD COLUMN "heroModelRotationY" DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE "StoreSettings" ADD COLUMN "heroTintPhotoUrl" TEXT;
+ALTER TABLE "HeroPreset" ADD COLUMN "heroModelRotationY" DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE "HeroPreset" ADD COLUMN "heroTintPhotoUrl" TEXT;

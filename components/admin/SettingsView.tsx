@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
+import { ImageField } from "@/components/admin/ImageField";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
 type BoxLabels = {
@@ -22,9 +23,9 @@ type BoxLabels = {
   heroBoxNumberColor: string;
 };
 
-type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
+type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationY: number; heroTintPhotoUrl: string | null } & BoxLabels;
 
-type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null } & BoxLabels;
+type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationY: number; heroTintPhotoUrl: string | null } & BoxLabels;
 
 const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
   { key: "heroBoxLine", label: "POP! line", hint: "Printed under the POP! badge — Animation, Marvel, Games…" },
@@ -82,7 +83,7 @@ export function SettingsView() {
   const [box, setBox] = React.useState<BoxLabels>(DEFAULT_BOX);
   const presets = useAdminResource<HeroPreset[]>("/api/admin/hero-presets");
   const [presetBusy, setPresetBusy] = React.useState(false);
-  const [model, setModel] = React.useState<{ url: string | null; name: string | null }>({ url: null, name: null });
+  const [model, setModel] = React.useState<{ url: string | null; name: string | null; rotationY: number; tintPhotoUrl: string | null }>({ url: null, name: null, rotationY: 0, tintPhotoUrl: null });
   const [notice, setNotice] = React.useState<string | null>(null);
   const [failure, setFailure] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
@@ -103,7 +104,7 @@ export function SettingsView() {
       heroBoxCheckDark: settings.data.heroBoxCheckDark,
       heroBoxNumberColor: settings.data.heroBoxNumberColor,
     });
-    setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName });
+    setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName, rotationY: settings.data.heroModelRotationY, tintPhotoUrl: settings.data.heroTintPhotoUrl });
   }, [settings.data]);
 
   const valid = HEX.test(accent) && (secondary === null || HEX.test(secondary)) &&
@@ -115,6 +116,8 @@ export function SettingsView() {
       secondary !== settings.data!.secondaryColor ||
       secondaryText !== settings.data!.secondaryTextColor ||
       model.url !== settings.data!.heroModelUrl ||
+      model.rotationY !== settings.data!.heroModelRotationY ||
+      model.tintPhotoUrl !== settings.data!.heroTintPhotoUrl ||
       BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]) ||
       BOX_CHECKS.some(({ key }) => box[key] !== settings.data![key]));
 
@@ -139,7 +142,7 @@ export function SettingsView() {
       heroBoxCheckDark: preset.heroBoxCheckDark,
       heroBoxNumberColor: preset.heroBoxNumberColor,
     });
-    setModel({ url: preset.heroModelUrl, name: preset.heroModelName });
+    setModel({ url: preset.heroModelUrl, name: preset.heroModelName, rotationY: preset.heroModelRotationY, tintPhotoUrl: preset.heroTintPhotoUrl });
     setNotice(`Loaded "${preset.name}" — press Save to put it on the shop.`);
   }
 
@@ -150,7 +153,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/hero-presets", {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), heroModelUrl: model.url, heroModelName: model.name, ...box }),
+        body: JSON.stringify({ name: name.trim(), heroModelUrl: model.url, heroModelName: model.name, heroModelRotationY: model.rotationY, heroTintPhotoUrl: model.tintPhotoUrl, ...box }),
       });
       setNotice(`Saved the preset "${name.trim()}".`);
       await presets.reload();
@@ -182,7 +185,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, ...box }),
+        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, heroModelRotationY: model.rotationY, heroTintPhotoUrl: model.tintPhotoUrl, ...box }),
       });
       setNotice("Saved — the storefront updates within a few seconds.");
       await settings.reload();
@@ -203,7 +206,7 @@ export function SettingsView() {
       });
       const putResponse = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "model/gltf-binary" }, body: file });
       if (!putResponse.ok) throw new Error(`Upload failed (${putResponse.status})`);
-      setModel({ url: publicUrl, name: file.name });
+      setModel((current) => ({ ...current, url: publicUrl, name: file.name }));
       setNotice("Model uploaded — press Save to put it on the homepage.");
     } catch (cause) {
       setFailure(cause instanceof Error ? cause.message : "Could not upload that model.");
@@ -468,8 +471,30 @@ export function SettingsView() {
               {uploading && <p className="text-xs text-muted-foreground">Uploading…</p>}
             </div>
 
+            <div className="grid gap-1.5">
+              <Label htmlFor="hero-model-rotation">Rotation (Y°)</Label>
+              <Input
+                id="hero-model-rotation"
+                type="number"
+                min={-180}
+                max={180}
+                step={1}
+                value={model.rotationY}
+                onChange={(event) => setModel((current) => ({ ...current, rotationY: Number(event.target.value) || 0 }))}
+              />
+              <p className="text-xs text-muted-foreground">A fixed turn applied before the idle swing — for a model exported facing the wrong way or lying on its side.</p>
+            </div>
+
+            <ImageField
+              id="hero-tint-photo"
+              label="Tint reference photo"
+              value={model.tintPhotoUrl ?? ""}
+              onChange={(url) => setModel((current) => ({ ...current, tintPhotoUrl: url || null }))}
+              hint="Used only when the model itself has no material colour — the storefront samples this photo's dominant colour as a fallback tint."
+            />
+
             {model.url && (
-              <Button type="button" variant="ghost" size="sm" className="justify-self-start" onClick={() => setModel({ url: null, name: null })}>
+              <Button type="button" variant="ghost" size="sm" className="justify-self-start" onClick={() => setModel({ url: null, name: null, rotationY: 0, tintPhotoUrl: null })}>
                 Go back to the built-in model
               </Button>
             )}
