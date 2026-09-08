@@ -23,9 +23,10 @@ type BoxLabels = {
   heroBoxNumberColor: string;
 };
 
-type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null } & BoxLabels;
+type PaintStroke = { x: number; y: number; z: number; r: number; c: string; e?: 1 };
+type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null; heroModelPaint: PaintStroke[] | null } & BoxLabels;
 
-type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null } & BoxLabels;
+type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null; heroModelPaint: PaintStroke[] | null } & BoxLabels;
 
 const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
   { key: "heroBoxLine", label: "POP! line", hint: "Printed under the POP! badge — Animation, Marvel, Games…" },
@@ -83,7 +84,8 @@ export function SettingsView() {
   const [box, setBox] = React.useState<BoxLabels>(DEFAULT_BOX);
   const presets = useAdminResource<HeroPreset[]>("/api/admin/hero-presets");
   const [presetBusy, setPresetBusy] = React.useState(false);
-  const [model, setModel] = React.useState<{ url: string | null; name: string | null; rotationX: number; rotationY: number; rotationZ: number; tintPhotoUrl: string | null }>({ url: null, name: null, rotationX: 0, rotationY: 0, rotationZ: 0, tintPhotoUrl: null });
+  const [model, setModel] = React.useState<{ url: string | null; name: string | null; rotationX: number; rotationY: number; rotationZ: number; tintPhotoUrl: string | null; paint: PaintStroke[] }>({ url: null, name: null, rotationX: 0, rotationY: 0, rotationZ: 0, tintPhotoUrl: null, paint: [] });
+  const [painting, setPainting] = React.useState(false);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [failure, setFailure] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
@@ -104,7 +106,7 @@ export function SettingsView() {
       heroBoxCheckDark: settings.data.heroBoxCheckDark,
       heroBoxNumberColor: settings.data.heroBoxNumberColor,
     });
-    setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName, rotationX: settings.data.heroModelRotationX, rotationY: settings.data.heroModelRotationY, rotationZ: settings.data.heroModelRotationZ, tintPhotoUrl: settings.data.heroTintPhotoUrl });
+    setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName, rotationX: settings.data.heroModelRotationX, rotationY: settings.data.heroModelRotationY, rotationZ: settings.data.heroModelRotationZ, tintPhotoUrl: settings.data.heroTintPhotoUrl, paint: settings.data.heroModelPaint ?? [] });
   }, [settings.data]);
 
   const valid = HEX.test(accent) && (secondary === null || HEX.test(secondary)) &&
@@ -120,6 +122,7 @@ export function SettingsView() {
       model.rotationY !== settings.data!.heroModelRotationY ||
       model.rotationZ !== settings.data!.heroModelRotationZ ||
       model.tintPhotoUrl !== settings.data!.heroTintPhotoUrl ||
+      JSON.stringify(model.paint) !== JSON.stringify(settings.data!.heroModelPaint ?? []) ||
       BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]) ||
       BOX_CHECKS.some(({ key }) => box[key] !== settings.data![key]));
 
@@ -152,9 +155,36 @@ export function SettingsView() {
     });
     if (modelPreview.model.url) query.set("model", modelPreview.model.url);
     if (modelPreview.model.tintPhotoUrl) query.set("tint", modelPreview.model.tintPhotoUrl);
+    if (modelPreview.model.paint.length) query.set("strokes", JSON.stringify(modelPreview.model.paint));
     if (modelPreview.secondary) query.set("secondary", modelPreview.secondary);
     return `${STORE_URL}/hero-preview?${query.toString()}`;
   })();
+
+  const heroPaintSrc = (() => {
+    const query = new URLSearchParams({
+      rotationX: String(model.rotationX),
+      rotationY: String(model.rotationY),
+      rotationZ: String(model.rotationZ),
+    });
+    if (model.url) query.set("model", model.url);
+    if (model.tintPhotoUrl) query.set("tint", model.tintPhotoUrl);
+    if (model.paint.length) query.set("strokes", JSON.stringify(model.paint));
+    return `${STORE_URL}/hero-paint?${query.toString()}`;
+  })();
+
+  React.useEffect(() => {
+    if (!painting) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== STORE_URL) return;
+      const data = event.data as { type?: string; strokes?: PaintStroke[] } | null;
+      if (data?.type !== "hero-paint:save" || !Array.isArray(data.strokes)) return;
+      setModel((current) => ({ ...current, paint: data.strokes as PaintStroke[] }));
+      setPainting(false);
+      setNotice("Paint applied — save to publish it.");
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [painting]);
 
   const previewSrc = `${STORE_URL}/theme-preview?accent=${encodeURIComponent(previewColours.accent)}${
     previewColours.secondary ? `&secondary=${encodeURIComponent(previewColours.secondary)}` : ""
@@ -171,7 +201,7 @@ export function SettingsView() {
       heroBoxCheckDark: preset.heroBoxCheckDark,
       heroBoxNumberColor: preset.heroBoxNumberColor,
     });
-    setModel({ url: preset.heroModelUrl, name: preset.heroModelName, rotationX: preset.heroModelRotationX, rotationY: preset.heroModelRotationY, rotationZ: preset.heroModelRotationZ, tintPhotoUrl: preset.heroTintPhotoUrl });
+    setModel({ url: preset.heroModelUrl, name: preset.heroModelName, rotationX: preset.heroModelRotationX, rotationY: preset.heroModelRotationY, rotationZ: preset.heroModelRotationZ, tintPhotoUrl: preset.heroTintPhotoUrl, paint: preset.heroModelPaint ?? [] });
     setNotice(`Loaded "${preset.name}" — press Save to put it on the shop.`);
   }
 
@@ -182,7 +212,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/hero-presets", {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), heroModelUrl: model.url, heroModelName: model.name, heroModelRotationX: model.rotationX, heroModelRotationY: model.rotationY, heroModelRotationZ: model.rotationZ, heroTintPhotoUrl: model.tintPhotoUrl, ...box }),
+        body: JSON.stringify({ name: name.trim(), heroModelUrl: model.url, heroModelName: model.name, heroModelRotationX: model.rotationX, heroModelRotationY: model.rotationY, heroModelRotationZ: model.rotationZ, heroTintPhotoUrl: model.tintPhotoUrl, heroModelPaint: model.paint, ...box }),
       });
       setNotice(`Saved the preset "${name.trim()}".`);
       await presets.reload();
@@ -214,7 +244,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, heroModelRotationX: model.rotationX, heroModelRotationY: model.rotationY, heroModelRotationZ: model.rotationZ, heroTintPhotoUrl: model.tintPhotoUrl, ...box }),
+        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, heroModelRotationX: model.rotationX, heroModelRotationY: model.rotationY, heroModelRotationZ: model.rotationZ, heroTintPhotoUrl: model.tintPhotoUrl, heroModelPaint: model.paint, ...box }),
       });
       setNotice("Saved — the storefront updates within a few seconds.");
       await settings.reload();
@@ -459,14 +489,23 @@ export function SettingsView() {
                   Live 3D preview
                   {dirty && <span className="ml-2 text-foreground">· unsaved</span>}
                 </p>
-                <a
-                  href={heroPreviewSrc}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                >
-                  Open full size
-                </a>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPainting(true)}
+                    className="text-xs font-medium text-foreground underline-offset-2 hover:underline"
+                  >
+                    Paint model{model.paint.length ? ` (${model.paint.length})` : ""}
+                  </button>
+                  <a
+                    href={heroPreviewSrc}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                    Open full size
+                  </a>
+                </div>
               </div>
               <iframe
                 key={heroPreviewSrc}
@@ -559,7 +598,7 @@ export function SettingsView() {
             />
 
             {model.url && (
-              <Button type="button" variant="ghost" size="sm" className="justify-self-start" onClick={() => setModel({ url: null, name: null, rotationX: 0, rotationY: 0, rotationZ: 0, tintPhotoUrl: null })}>
+              <Button type="button" variant="ghost" size="sm" className="justify-self-start" onClick={() => setModel({ url: null, name: null, rotationX: 0, rotationY: 0, rotationZ: 0, tintPhotoUrl: null, paint: [] })}>
                 Go back to the built-in model
               </Button>
             )}
@@ -658,6 +697,34 @@ export function SettingsView() {
           </CardContent>
         </Card>
       </div>
+
+      {painting && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/70 p-4 sm:p-8">
+          <div className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+            <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+              <div>
+                <p className="text-sm font-medium text-foreground">Paint the model</p>
+                <p className="text-xs text-muted-foreground">
+                  Drag to rotate, switch to paint mode, then brush over any marks the photo missed. Apply paint sends it back here.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPainting(false)}
+                className="rounded-md border border-input px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+              >
+                Close
+              </button>
+            </div>
+            <iframe
+              src={heroPaintSrc}
+              title="Paint hero model"
+              className="min-h-0 flex-1 border-0 bg-secondary"
+              sandbox="allow-scripts allow-same-origin"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

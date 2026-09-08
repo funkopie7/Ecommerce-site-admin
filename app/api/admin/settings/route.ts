@@ -20,6 +20,7 @@ const input = z.object({
   heroModelRotationY: z.number().min(-360).max(360).optional(),
   heroModelRotationZ: z.number().min(-360).max(360).optional(),
   heroTintPhotoUrl: z.string().url().nullable().optional(),
+  heroModelPaint: z.array(z.object({ x: z.number(), y: z.number(), z: z.number(), r: z.number().positive(), c: z.string().regex(/^#[0-9a-fA-F]{6}$/), e: z.literal(1).optional() })).max(4000).optional(),
   heroBoxLine: z.string().max(40).optional(),
   heroBoxNumber: z.string().max(40).optional(),
   heroBoxBanner: z.string().max(40).optional(),
@@ -40,7 +41,7 @@ export async function PATCH(request: NextRequest) {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID, ...parsed.data },
     update: parsed.data,
-    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationX: true, heroModelRotationY: true, heroModelRotationZ: true, heroTintPhotoUrl: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
+    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationX: true, heroModelRotationY: true, heroModelRotationZ: true, heroTintPhotoUrl: true, heroModelPaint: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
   });
   revalidateStorefront();
   return NextResponse.json(saved);

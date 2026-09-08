@@ -458,6 +458,7 @@ model HeroPreset {
   heroModelRotationY Float @default(0)
   heroModelRotationZ Float @default(0)
   heroTintPhotoUrl String?
+  heroModelPaint   Json?
   heroBoxLine String @default("ANIMATION")
   heroBoxNumber String @default("1000")
   heroBoxBanner String @default("DEMON SLAYER")
@@ -491,6 +492,7 @@ model StoreSettings {
   heroModelRotationY Float @default(0)
   heroModelRotationZ Float @default(0)
   heroTintPhotoUrl String?
+  heroModelPaint   Json?
   /* The words printed on the hero's POP! box. The artwork is drawn in code
      rather than shipped as an image, and every line of it was hardcoded to
      the figure the scene was built around — so uploading any other model put

@@ -1,0 +1,2 @@
+ALTER TABLE "StoreSettings" ADD COLUMN IF NOT EXISTS "heroModelPaint" JSONB;
+ALTER TABLE "HeroPreset" ADD COLUMN IF NOT EXISTS "heroModelPaint" JSONB;
