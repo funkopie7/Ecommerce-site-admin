@@ -23,6 +23,7 @@ export type PublicSettings = {
   heroBoxCheckLight: string;
   heroBoxCheckDark: string;
   heroBoxNumberColor: string;
+  chaseRoomProductIds: unknown;
 };
 
 export async function getStoreSettings(): Promise<PublicSettings> {
@@ -30,7 +31,7 @@ export async function getStoreSettings(): Promise<PublicSettings> {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID },
     update: {},
-    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationX: true, heroModelRotationY: true, heroModelRotationZ: true, heroTintPhotoUrl: true, heroModelPaint: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
+    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationX: true, heroModelRotationY: true, heroModelRotationZ: true, heroTintPhotoUrl: true, heroModelPaint: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true, chaseRoomProductIds: true },
   });
   return row;
 }

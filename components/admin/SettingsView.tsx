@@ -1,14 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Blend, Box, Palette, Type } from "lucide-react";
+import { Blend, Box, Palette, Trophy, Type } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
+import { formatMoney } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ErrorState, Notice, PageHeader } from "@/components/admin/PageHeader";
+import type { Product } from "@/components/admin/types";
 import { ImageField } from "@/components/admin/ImageField";
 import { useAdminResource } from "@/components/admin/useAdminResource";
 
@@ -26,7 +28,7 @@ type BoxLabels = {
 type PaintStroke = { x: number; y: number; z: number; r: number; c: string; e?: 1 };
 type HeroPreset = { id: string; name: string; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null; heroModelPaint: PaintStroke[] | null } & BoxLabels;
 
-type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null; heroModelPaint: PaintStroke[] | null } & BoxLabels;
+type Settings = { accentColor: string; secondaryColor: string | null; secondaryTextColor: string | null; heroModelUrl: string | null; heroModelName: string | null; heroModelRotationX: number; heroModelRotationY: number; heroModelRotationZ: number; heroTintPhotoUrl: string | null; heroModelPaint: PaintStroke[] | null; chaseRoomProductIds: string[] | null } & BoxLabels;
 
 const BOX_FIELDS: { key: keyof BoxLabels; label: string; hint: string }[] = [
   { key: "heroBoxLine", label: "POP! line", hint: "Printed under the POP! badge — Animation, Marvel, Games…" },
@@ -90,6 +92,9 @@ export function SettingsView() {
   const [failure, setFailure] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
+  const [chasePicks, setChasePicks] = React.useState<string[]>([]);
+  const [chaseSearch, setChaseSearch] = React.useState("");
+  const products = useAdminResource<Product[]>("/api/admin/products");
 
   React.useEffect(() => {
     if (!settings.data) return;
@@ -107,6 +112,7 @@ export function SettingsView() {
       heroBoxNumberColor: settings.data.heroBoxNumberColor,
     });
     setModel({ url: settings.data.heroModelUrl, name: settings.data.heroModelName, rotationX: settings.data.heroModelRotationX, rotationY: settings.data.heroModelRotationY, rotationZ: settings.data.heroModelRotationZ, tintPhotoUrl: settings.data.heroTintPhotoUrl, paint: settings.data.heroModelPaint ?? [] });
+    setChasePicks(settings.data.chaseRoomProductIds ?? []);
   }, [settings.data]);
 
   const valid = HEX.test(accent) && (secondary === null || HEX.test(secondary)) &&
@@ -123,6 +129,7 @@ export function SettingsView() {
       model.rotationZ !== settings.data!.heroModelRotationZ ||
       model.tintPhotoUrl !== settings.data!.heroTintPhotoUrl ||
       JSON.stringify(model.paint) !== JSON.stringify(settings.data!.heroModelPaint ?? []) ||
+      JSON.stringify(chasePicks) !== JSON.stringify(settings.data!.chaseRoomProductIds ?? []) ||
       BOX_FIELDS.some(({ key }) => box[key] !== settings.data![key]) ||
       BOX_CHECKS.some(({ key }) => box[key] !== settings.data![key]));
 
@@ -237,6 +244,27 @@ export function SettingsView() {
     }
   }
 
+  const chaseProducts = products.data ?? [];
+  const chaseFiltered = chaseSearch.trim()
+    ? chaseProducts.filter((product) => `${product.name} ${product.sku}`.toLowerCase().includes(chaseSearch.trim().toLowerCase()))
+    : chaseProducts;
+  const chaseById = React.useMemo(() => new Map(chaseProducts.map((product) => [product.id, product])), [chaseProducts]);
+
+  function toggleChasePick(productId: string, checked: boolean) {
+    setChasePicks((current) => (checked ? [...current, productId] : current.filter((id) => id !== productId)));
+  }
+
+  function moveChasePick(productId: string, direction: -1 | 1) {
+    setChasePicks((current) => {
+      const index = current.indexOf(productId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.length) return current;
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
   async function save() {
     if (!valid) { setFailure("Enter a colour as a hex value, like #E8622A"); return; }
     setSaving(true);
@@ -244,7 +272,7 @@ export function SettingsView() {
     try {
       await adminFetch("/api/admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, heroModelRotationX: model.rotationX, heroModelRotationY: model.rotationY, heroModelRotationZ: model.rotationZ, heroTintPhotoUrl: model.tintPhotoUrl, heroModelPaint: model.paint, ...box }),
+        body: JSON.stringify({ accentColor: accent, secondaryColor: secondary, secondaryTextColor: secondaryText, heroModelUrl: model.url, heroModelName: model.name, heroModelRotationX: model.rotationX, heroModelRotationY: model.rotationY, heroModelRotationZ: model.rotationZ, heroTintPhotoUrl: model.tintPhotoUrl, heroModelPaint: model.paint, chaseRoomProductIds: chasePicks, ...box }),
       });
       setNotice("Saved — the storefront updates within a few seconds.");
       await settings.reload();
@@ -602,6 +630,101 @@ export function SettingsView() {
                 Go back to the built-in model
               </Button>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex-row items-start gap-3 space-y-0">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+              <Trophy className="size-4" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Chase Room</CardTitle>
+              <CardDescription>
+                The homepage shelf of grails and limited editions. Pick figures below to feature
+                them, in this order — leave nothing checked and it fills itself with the most
+                expensive Chase-variant figures instead.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            {chasePicks.length > 0 && (
+              <div className="grid gap-1.5 rounded-lg border border-input p-2">
+                {chasePicks.map((productId, index) => {
+                  const product = chaseById.get(productId);
+                  return (
+                    <div key={productId} className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-secondary/60">
+                      <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
+                        {product?.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- product images are arbitrary remote URLs; next/image would need a host allowlist we don't control.
+                          <img src={product.imageUrl} alt="" className="size-full object-cover" />
+                        ) : null}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm">{product?.name ?? "Removed product"}</p>
+                        {product && <p className="truncate font-mono text-xs text-muted-foreground">{product.sku} · {formatMoney(product.price)}</p>}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button type="button" variant="ghost" size="sm" className="h-7 px-2" disabled={index === 0} onClick={() => moveChasePick(productId, -1)}>
+                          ↑
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-7 px-2" disabled={index === chasePicks.length - 1} onClick={() => moveChasePick(productId, 1)}>
+                          ↓
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-destructive" onClick={() => toggleChasePick(productId, false)}>
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="chase-search">Add a figure</Label>
+              <Input
+                id="chase-search"
+                placeholder="Search by name or SKU…"
+                value={chaseSearch}
+                onChange={(event) => setChaseSearch(event.target.value)}
+              />
+            </div>
+
+            <div className="max-h-56 overflow-y-auto rounded-lg border border-border">
+              {chaseFiltered.length === 0 && (
+                <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                  {products.data ? "No figures match that search." : "Loading figures…"}
+                </p>
+              )}
+              {chaseFiltered.map((product) => {
+                const checked = chasePicks.includes(product.id);
+                return (
+                  <div key={product.id} className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-0">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => toggleChasePick(product.id, event.target.checked)}
+                      className="size-4 accent-[hsl(var(--primary))]"
+                      aria-label={`Feature ${product.name} in the Chase Room`}
+                    />
+                    <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
+                      {product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- product images are arbitrary remote URLs; next/image would need a host allowlist we don't control.
+                        <img src={product.imageUrl} alt="" className="size-full object-cover" />
+                      ) : null}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm">{product.name}</p>
+                      <p className="truncate font-mono text-xs text-muted-foreground">
+                        {product.sku} · {formatMoney(product.price)}
+                        {product.variantType === "Chase" && " · Chase"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 

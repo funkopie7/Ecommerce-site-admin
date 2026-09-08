@@ -29,7 +29,7 @@ const input = z.object({
   heroBoxCheckLight: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
   heroBoxCheckDark: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
   heroBoxNumberColor: z.string().refine(isHexColor, "Enter a colour as a hex value").optional(),
-
+  chaseRoomProductIds: z.array(z.string()).max(24).optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest) {
     where: { id: SETTINGS_ID },
     create: { id: SETTINGS_ID, ...parsed.data },
     update: parsed.data,
-    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationX: true, heroModelRotationY: true, heroModelRotationZ: true, heroTintPhotoUrl: true, heroModelPaint: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true },
+    select: { accentColor: true, secondaryColor: true, secondaryTextColor: true, heroModelUrl: true, heroModelName: true, heroModelRotationX: true, heroModelRotationY: true, heroModelRotationZ: true, heroTintPhotoUrl: true, heroModelPaint: true, heroBoxLine: true, heroBoxNumber: true, heroBoxBanner: true, heroBoxName: true, heroBoxSubtitle: true, heroBoxCheckLight: true, heroBoxCheckDark: true, heroBoxNumberColor: true, chaseRoomProductIds: true },
   });
   revalidateStorefront();
   return NextResponse.json(saved);

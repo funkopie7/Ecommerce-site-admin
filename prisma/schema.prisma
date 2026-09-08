@@ -519,5 +519,6 @@ model StoreSettings {
      piece of type whose contrast depends on choices made elsewhere in this
      block, and it needs to be tunable independently of them. */
   heroBoxNumberColor String @default("#FFFFFF")
+  chaseRoomProductIds Json?
   updatedAt DateTime @updatedAt
 }
