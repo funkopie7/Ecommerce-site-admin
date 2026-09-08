@@ -129,6 +129,33 @@ export function SettingsView() {
     return () => clearTimeout(timer);
   }, [accent, secondary, secondaryText]);
 
+  const [modelPreview, setModelPreview] = React.useState({ model, box, accent, secondary });
+  React.useEffect(() => {
+    const timer = setTimeout(() => setModelPreview({ model, box, accent, secondary }), 400);
+    return () => clearTimeout(timer);
+  }, [model, box, accent, secondary]);
+
+  const heroPreviewSrc = (() => {
+    const query = new URLSearchParams({
+      rotationX: String(modelPreview.model.rotationX),
+      rotationY: String(modelPreview.model.rotationY),
+      rotationZ: String(modelPreview.model.rotationZ),
+      accent: modelPreview.accent,
+      line: modelPreview.box.heroBoxLine,
+      number: modelPreview.box.heroBoxNumber,
+      banner: modelPreview.box.heroBoxBanner,
+      name: modelPreview.box.heroBoxName,
+      subtitle: modelPreview.box.heroBoxSubtitle,
+      checkLight: modelPreview.box.heroBoxCheckLight,
+      checkDark: modelPreview.box.heroBoxCheckDark,
+      numberColor: modelPreview.box.heroBoxNumberColor,
+    });
+    if (modelPreview.model.url) query.set("model", modelPreview.model.url);
+    if (modelPreview.model.tintPhotoUrl) query.set("tint", modelPreview.model.tintPhotoUrl);
+    if (modelPreview.secondary) query.set("secondary", modelPreview.secondary);
+    return `${STORE_URL}/hero-preview?${query.toString()}`;
+  })();
+
   const previewSrc = `${STORE_URL}/theme-preview?accent=${encodeURIComponent(previewColours.accent)}${
     previewColours.secondary ? `&secondary=${encodeURIComponent(previewColours.secondary)}` : ""
   }${previewColours.secondaryText ? `&secondaryText=${encodeURIComponent(previewColours.secondaryText)}` : ""}`;
@@ -426,6 +453,31 @@ export function SettingsView() {
             </div>
           </CardHeader>
           <CardContent className="grid gap-3">
+            <div className="overflow-hidden rounded-lg border border-border">
+              <div className="flex items-center justify-between border-b border-border bg-secondary/40 px-3 py-1.5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Live 3D preview
+                  {dirty && <span className="ml-2 text-foreground">· unsaved</span>}
+                </p>
+                <a
+                  href={heroPreviewSrc}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Open full size
+                </a>
+              </div>
+              <iframe
+                key={heroPreviewSrc}
+                src={heroPreviewSrc}
+                title="Hero 3D model preview"
+                className="h-[320px] w-full border-0 bg-secondary"
+                sandbox="allow-scripts allow-same-origin"
+                loading="lazy"
+              />
+            </div>
+
             <div className="min-w-0 rounded-lg border border-input px-3 py-2 text-sm">
               {model.url ? (
                 <>
