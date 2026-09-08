@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CheckCircle2, ImagePlus, RotateCcw, Send, X } from "lucide-react";
+import { CheckCircle2, ImageOff, ImagePlus, RotateCcw, Send, X } from "lucide-react";
 
 import { adminFetch } from "@/lib/adminApi";
 import { cn } from "@/lib/utils";
@@ -123,9 +123,17 @@ export function MessagesView() {
                       <Link
                         href={`/products?id=${row.product.id}`}
                         onClick={(event) => event.stopPropagation()}
-                        className="truncate font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+                        className="flex min-w-0 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-foreground"
                       >
-                        re: {row.product.name}
+                        <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted">
+                          {row.product.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- product images are arbitrary remote URLs; next/image would need a host allowlist we don't control.
+                            <img src={row.product.imageUrl} alt="" className="size-full object-cover" />
+                          ) : (
+                            <ImageOff className="size-3 text-muted-foreground" />
+                          )}
+                        </span>
+                        <span className="truncate underline decoration-dotted underline-offset-2">re: {row.product.name}</span>
                       </Link>
                     )}
                     <div className="flex items-center justify-between gap-2">
@@ -268,17 +276,23 @@ function ThreadPane({
           <p className="truncate text-sm font-medium text-foreground">
             {thread?.customer.name ?? "Loading…"}
           </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {thread?.customer.email}
-            {thread?.product ? (
-              <>
-                {" · about "}
-                <Link href={`/products?id=${thread.product.id}`} className="underline decoration-dotted underline-offset-2 hover:text-foreground">
-                  {thread.product.name}
-                </Link>
-              </>
-            ) : null}
-          </p>
+          <p className="truncate text-xs text-muted-foreground">{thread?.customer.email}</p>
+          {thread?.product ? (
+            <Link
+              href={`/products?id=${thread.product.id}`}
+              className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
+                {thread.product.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- product images are arbitrary remote URLs; next/image would need a host allowlist we don't control.
+                  <img src={thread.product.imageUrl} alt="" className="size-full object-cover" />
+                ) : (
+                  <ImageOff className="size-3.5 text-muted-foreground" />
+                )}
+              </span>
+              <span className="truncate underline decoration-dotted underline-offset-2">about {thread.product.name}</span>
+            </Link>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {thread && <Badge variant={thread.status === "OPEN" ? "success" : "outline"}>{thread.status}</Badge>}
