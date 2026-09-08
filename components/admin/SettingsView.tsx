@@ -515,8 +515,8 @@ export function SettingsView() {
                   <Input
                     id="hero-model-rotation-x"
                     type="number"
-                    min={-180}
-                    max={180}
+                    min={-360}
+                    max={360}
                     step={1}
                     value={model.rotationX}
                     onChange={(event) => setModel((current) => ({ ...current, rotationX: Number(event.target.value) || 0 }))}
@@ -527,8 +527,8 @@ export function SettingsView() {
                   <Input
                     id="hero-model-rotation-y"
                     type="number"
-                    min={-180}
-                    max={180}
+                    min={-360}
+                    max={360}
                     step={1}
                     value={model.rotationY}
                     onChange={(event) => setModel((current) => ({ ...current, rotationY: Number(event.target.value) || 0 }))}
@@ -539,8 +539,8 @@ export function SettingsView() {
                   <Input
                     id="hero-model-rotation-z"
                     type="number"
-                    min={-180}
-                    max={180}
+                    min={-360}
+                    max={360}
                     step={1}
                     value={model.rotationZ}
                     onChange={(event) => setModel((current) => ({ ...current, rotationZ: Number(event.target.value) || 0 }))}
