@@ -244,11 +244,12 @@ export function SettingsView() {
     }
   }
 
-  const chaseProducts = products.data ?? [];
+  const chaseAllProducts = products.data ?? [];
+  const chaseProducts = chaseAllProducts.filter((product) => product.visible);
   const chaseFiltered = chaseSearch.trim()
     ? chaseProducts.filter((product) => `${product.name} ${product.sku}`.toLowerCase().includes(chaseSearch.trim().toLowerCase()))
     : chaseProducts;
-  const chaseById = React.useMemo(() => new Map(chaseProducts.map((product) => [product.id, product])), [chaseProducts]);
+  const chaseById = React.useMemo(() => new Map(chaseAllProducts.map((product) => [product.id, product])), [chaseAllProducts]);
 
   function toggleChasePick(productId: string, checked: boolean) {
     setChasePicks((current) => (checked ? [...current, productId] : current.filter((id) => id !== productId)));
@@ -662,7 +663,12 @@ export function SettingsView() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm">{product?.name ?? "Removed product"}</p>
-                        {product && <p className="truncate font-mono text-xs text-muted-foreground">{product.sku} · {formatMoney(product.price)}</p>}
+                        {product && (
+                          <p className="truncate font-mono text-xs text-muted-foreground">
+                            {product.sku} · {formatMoney(product.price)}
+                            {!product.visible && <span className="text-destructive"> · Hidden — won&apos;t show on the homepage</span>}
+                          </p>
+                        )}
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
                         <Button type="button" variant="ghost" size="sm" className="h-7 px-2" disabled={index === 0} onClick={() => moveChasePick(productId, -1)}>
