@@ -9,4 +9,12 @@ The ecommerce authority: products, categories, stock, customers, carts, checkout
 3. Run `npm install`, `npx prisma migrate dev --name ecommerce`, and `npm run db:seed`.
 4. Start with `npm run dev` (port 3900).
 
-Public catalog is available at `/api/catalog/products`. Admin mutations require the `x-admin-key` header. Customer sessions are HTTP-only cookies. Customer auth assumes the storefront and admin apps sit on different origins/domains in production (set via `NEXT_PUBLIC_STORE_URL`), which is why the customer session cookie is `SameSite=None; Secure` there. Checkout is intentionally a simulated payment; it reduces stock and writes immutable item/address snapshots in one database transaction.
+Public catalog is available at `/api/catalog/products`. Admin mutations require the `x-admin-key` header. Customer sessions are HTTP-only cookies. Customer auth assumes the storefront and admin apps sit on different origins/domains in production (set via `NEXT_PUBLIC_STORE_URL`), which is why the customer session cookie is `SameSite=None; Secure` there. Checkout goes through Razorpay; a successful payment reduces stock and writes immutable item/address snapshots in one database transaction, except for preorder line items, which skip the stock decrement.
+
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the two apps and the database fit together
+- [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) — every env var, what it's for, and where to get it
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Vercel setup, deployment protection, custom domains
+- [`docs/AUTH.md`](docs/AUTH.md) — admin login and customer auth (email/password + Google)
+- [`docs/HERO_3D.md`](docs/HERO_3D.md) — the homepage 3D figure, auto-paint, paint studio, and Chase Room curation
